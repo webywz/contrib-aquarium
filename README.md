@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://github.com/webywz/contrib-aquarium/actions/workflows/ci.yml"><img src="https://github.com/webywz/contrib-aquarium/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-c4a35a?labelColor=1b2a2e" alt="MIT" /></a>
+  <a href="https://www.npmjs.com/package/contrib-aquarium"><img src="https://img.shields.io/npm/v/contrib-aquarium?color=2a7a5c&labelColor=1b2a2e" alt="npm version" /></a>
   <a href="https://www.npmjs.com/package/contrib-aquarium"><img src="https://img.shields.io/badge/npx-contrib--aquarium-2a7a5c?labelColor=1b2a2e" alt="npx contrib-aquarium" /></a>
 </p>
 
@@ -23,9 +24,9 @@ The tank is pure SVG (CSS + SMIL). No JavaScript in the embed, so GitHub READMEs
 
 鱼缸是自包含 SVG（CSS + SMIL），嵌入时不需要 JS，可当普通图片用。暗水色 + 铜框，在 GitHub 浅色 / 深色主题下都站得住。
 
-> v0.1.0 is the first cut. `npx contrib-aquarium` is the published entry; until the package is on npm, clone this repo and run `npm run generate`.
+> v0.1.0 is on npm. `npx contrib-aquarium` is the published entry point.
 >
-> v0.1.0 是第一版。发布到 npm 之前请 clone 本仓库，用 `npm run generate`。
+> v0.1.0 已发布到 npm。入口是 `npx contrib-aquarium`。
 
 ---
 
@@ -35,13 +36,11 @@ The tank is pure SVG (CSS + SMIL). No JavaScript in the embed, so GitHub READMEs
 npx contrib-aquarium generate --user YOUR_LOGIN --out aquarium.svg
 ```
 
-From this repo (until the package is published):
+Or install globally:
 
 ```bash
-git clone https://github.com/webywz/contrib-aquarium.git
-cd contrib-aquarium
-npm install
-npm run generate -- --user YOUR_LOGIN --out aquarium.svg
+npm i -g contrib-aquarium
+contrib-aquarium generate --user YOUR_LOGIN --out aquarium.svg
 ```
 
 Then in a README:
@@ -53,6 +52,19 @@ Then in a README:
 A GitHub token is optional. Without one, generation still succeeds via public events or a deterministic mock — demos never go blank.
 
 没有 token 也能跑：公开 Events 或按用户名哈希生成的演示日历会顶上，预览不会空。
+
+### Develop from source · 从源码开发
+
+Clone if you are hacking on the generator itself:
+
+本地改生成器时再 clone：
+
+```bash
+git clone https://github.com/webywz/contrib-aquarium.git
+cd contrib-aquarium
+npm install
+npm run generate -- --user YOUR_LOGIN --out aquarium.svg
+```
 
 ---
 
