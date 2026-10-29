@@ -1,0 +1,40 @@
+name: Daily aquarium
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-aquarium
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Generate demo SVG for webywz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node dist/cli.js generate --user webywz --out docs/aquarium.svg
+      - name: Commit if the tank changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/aquarium.svg
+          if git diff --staged --quiet; then
+            echo "Aquarium already up to date."
+          else
+            git commit -m "chore: refresh aquarium for webywz"
+            git push
+          fi

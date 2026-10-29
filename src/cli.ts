@@ -1,0 +1,128 @@
+#!/usr/bin/env node
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { generateAquarium } from "./generate.js";
+import { readPackageVersion } from "./util.js";
+import type { LoadSource } from "./types.js";
+
+type FlagMap = Record<string, string | boolean>;
+
+function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMap } {
+  const args = argv.slice(2);
+  const command = args[0]?.startsWith("-") ? undefined : args[0];
+  const flags: FlagMap = {};
+  const start = command ? 1 : 0;
+  for (let i = start; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "-h" || arg === "--help") {
+      flags.help = true;
+      continue;
+    }
+    if (arg === "-v" || arg === "--version") {
+      flags.version = true;
+      continue;
+    }
+    if (!arg.startsWith("--")) {
+      throw new Error(`Unexpected argument: ${arg}`);
+    }
+    const key = arg.slice(2);
+    const next = args[i + 1];
+    if (!next || next.startsWith("--")) {
+      flags[key] = true;
+    } else {
+      flags[key] = next;
+      i += 1;
+    }
+  }
+  return { command, flags };
+}
+
+function help(): string {
+  return `contrib-aquarium ${readPackageVersion()}
+Turn a GitHub year into a living SVG aquarium.
+
+Usage:
+  contrib-aquarium generate --user <login> [--out aquarium.svg]
+                            [--source auto|graphql|events|mock]
+                            [--token <gh_token>]
+
+Options:
+  --user      GitHub login (required)
+  --out       Output path (default: aquarium.svg)
+  --source    auto (default), graphql, events, or mock
+  --token     GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
+  --help      Show this message
+  --version   Print version
+
+Data sources (auto):
+  1. GraphQL contributionsCollection   requires a token, full last-year calendar
+  2. Public events feed                recent activity, no token required
+  3. Deterministic mock from username  always works; offline demos
+
+The SVG is self-contained (CSS + SMIL). Drop it in a README as an image.
+`;
+}
+
+function asString(value: string | boolean | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function parseSource(value: string | boolean | undefined): LoadSource {
+  if (value === undefined || value === true) return "auto";
+  if (value === "auto" || value === "graphql" || value === "events" || value === "mock") {
+    return value;
+  }
+  throw new Error(`Unknown --source "${value}". Use auto, graphql, events, or mock.`);
+}
+
+async function run(argv: string[]): Promise<number> {
+  let parsed: { command: string | undefined; flags: FlagMap };
+  try {
+    parsed = parseArgs(argv);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    return 1;
+  }
+
+  const { command, flags } = parsed;
+  if (flags.version) {
+    console.log(readPackageVersion());
+    return 0;
+  }
+  if (flags.help || !command) {
+    console.log(help());
+    return flags.help || !command ? 0 : 1;
+  }
+  if (command !== "generate") {
+    console.error(`Unknown command "${command}". Try --help.`);
+    return 1;
+  }
+
+  const user = asString(flags.user);
+  if (!user) {
+    console.error("Missing --user <login>");
+    return 1;
+  }
+
+  const out = resolve(asString(flags.out) ?? "aquarium.svg");
+  try {
+    const { svg, activity } = await generateAquarium({
+      user,
+      token: asString(flags.token),
+      source: parseSource(flags.source),
+    });
+    await mkdir(dirname(out), { recursive: true });
+    await writeFile(out, svg, "utf8");
+    console.error(
+      `contrib-aquarium · ${activity.login} · source=${activity.source} · ${activity.totalContributions} contributions`,
+    );
+    console.error(`wrote ${out}`);
+    return 0;
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    return 1;
+  }
+}
+
+const exitCode = await run(process.argv);
+process.exit(exitCode);

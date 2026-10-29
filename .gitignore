@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tgz
+.env
+.env.*
+.DS_Store
+coverage/
+.idea/
+.vscode/
+*.log
+.playwright-mcp/

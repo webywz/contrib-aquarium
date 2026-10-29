@@ -1,0 +1,36 @@
+# Copy this into your profile repo as .github/workflows/aquarium.yml
+# (or any repo whose README should host the SVG).
+name: Generate contrib-aquarium
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/aquarium.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  aquarium:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: webywz/contrib-aquarium@main
+        with:
+          user: ${{ github.repository_owner }}
+          out: aquarium.svg
+      - name: Commit aquarium.svg
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add aquarium.svg
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "chore: refresh contribution aquarium"
+            git push
+          fi
