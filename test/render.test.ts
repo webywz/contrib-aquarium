@@ -1,0 +1,75 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { mockActivity } from "../src/activity.js";
+import { mapAquarium, mapFishCount } from "../src/mapping.js";
+import { countSvgElements, renderAquarium, SVG_HEIGHT, SVG_WIDTH } from "../src/render.js";
+import type { Activity } from "../src/types.js";
+
+const FROZEN = new Date("2026-10-29T00:00:00Z");
+
+function emptyish(login: string): Activity {
+  const activity = mockActivity(login, FROZEN);
+  return {
+    ...activity,
+    totalContributions: 0,
+    weeks: activity.weeks.map((week) => ({
+      days: week.days.map((day) => ({ ...day, count: 0 })),
+    })),
+    source: "mock",
+  };
+}
+
+describe("renderAquarium", () => {
+  it("emits a self-contained SVG with tank geometry and no scripts", () => {
+    const svg = renderAquarium(mockActivity("webywz", FROZEN));
+    assert.match(svg, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
+    assert.match(svg, /<svg /);
+    assert.match(svg, new RegExp(`viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}"`));
+    assert.match(svg, /<style>/);
+    assert.match(svg, /@keyframes swim/);
+    assert.doesNotMatch(svg, /<script/i);
+    assert.match(svg, /clip-path="url\(#tank\)"/);
+    assert.match(svg, /data-user="webywz"/);
+    assert.match(svg, /data-source="mock"/);
+  });
+
+  it("keeps fish count in sync with the mapping", () => {
+    const activity = mockActivity("webywz", FROZEN);
+    const svg = renderAquarium(activity);
+    assert.equal(countSvgElements(svg, "fish"), mapFishCount(activity.totalContributions));
+    const model = mapAquarium(activity);
+    assert.equal(countSvgElements(svg, "plant"), model.plants.length);
+    assert.equal(countSvgElements(svg, "bubble"), model.bubbles.length);
+    assert.ok(countSvgElements(svg, "fish") >= 3);
+  });
+
+  it("still renders a quiet tank when the year is empty", () => {
+    const svg = renderAquarium(emptyish("ghost"));
+    assert.equal(countSvgElements(svg, "fish"), 3);
+    assert.match(svg, /0 contributions/);
+    assert.match(svg, /demo pattern from username/);
+  });
+
+  it("escapes XML in usernames", () => {
+    const activity = mockActivity("webywz", FROZEN);
+    activity.login = `alice</svg><script>alert(1)</script>`;
+    const svg = renderAquarium(activity);
+    assert.doesNotMatch(svg, /<script>alert/);
+    assert.match(svg, /alice&lt;\/svg&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  });
+
+  it("is byte-stable for the same activity", () => {
+    const activity = mockActivity("stable-user", FROZEN);
+    assert.equal(renderAquarium(activity), renderAquarium(activity));
+  });
+
+  it("labels GraphQL-backed tanks as real contributions", () => {
+    const activity = mockActivity("webywz", FROZEN);
+    activity.source = "graphql";
+    activity.totalContributions = 74;
+    const svg = renderAquarium(activity);
+    assert.match(svg, /data-source="graphql"/);
+    assert.match(svg, /data-total="74"/);
+    assert.doesNotMatch(svg, /demo pattern from username/);
+  });
+});

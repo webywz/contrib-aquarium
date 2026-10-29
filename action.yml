@@ -1,0 +1,45 @@
+name: contrib-aquarium
+description: Generate a living SVG aquarium from a GitHub contribution graph
+author: webywz
+branding:
+  icon: droplet
+  color: blue
+inputs:
+  user:
+    description: GitHub login to visualize
+    required: true
+  out:
+    description: Path for the generated SVG, relative to the caller workspace
+    required: false
+    default: aquarium.svg
+  source:
+    description: "Activity source: auto, graphql, events, or mock"
+    required: false
+    default: auto
+  token:
+    description: GitHub token used for GraphQL (defaults to the workflow token)
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "22"
+    - name: Install contrib-aquarium
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci
+    - name: Build
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm run build
+    - name: Generate aquarium
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: >
+        node "${{ github.action_path }}/dist/cli.js" generate
+        --user "${{ inputs.user }}"
+        --out "${{ github.workspace }}/${{ inputs.out }}"
+        --source "${{ inputs.source }}"

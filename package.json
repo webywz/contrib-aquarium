@@ -1,0 +1,57 @@
+{
+  "name": "contrib-aquarium",
+  "version": "0.1.0",
+  "description": "A living SVG aquarium driven by a GitHub contribution graph — embeddable in profile READMEs.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "contrib-aquarium": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test test/*.test.ts",
+    "lint": "eslint src test",
+    "generate": "tsx src/cli.ts generate",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
+  },
+  "keywords": [
+    "github",
+    "svg",
+    "readme",
+    "contributions",
+    "aquarium",
+    "profile",
+    "animation"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webywz/contrib-aquarium.git"
+  },
+  "bugs": {
+    "url": "https://github.com/webywz/contrib-aquarium/issues"
+  },
+  "homepage": "https://github.com/webywz/contrib-aquarium#readme",
+  "author": "webywz",
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^22.18.0",
+    "eslint": "^9.36.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.44.0"
+  }
+}
