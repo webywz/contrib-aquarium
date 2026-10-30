@@ -96,4 +96,51 @@ describe("CLI", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("documents --width in help", async () => {
+    const result = await runCli(["--help"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /--width/);
+    assert.match(result.stdout, /--height/);
+    assert.match(result.stdout, /viewBox/);
+  });
+
+  it("writes a narrower aquarium with --width", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-width-"));
+    const out = join(dir, "narrow.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "cli-width",
+        "--source",
+        "mock",
+        "--width",
+        "430",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /width="430"/);
+      assert.match(svg, /height="150"/);
+      assert.match(svg, /viewBox="0 0 860 300"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a non-positive --width", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "bad-width",
+      "--source",
+      "mock",
+      "--width",
+      "0",
+    ]);
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /Invalid --width/);
+  });
 });

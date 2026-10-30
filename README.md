@@ -150,6 +150,27 @@ npx contrib-aquarium generate --user YOUR_LOGIN --theme midnight --out aquarium.
 
 ---
 
+## Embed size · 嵌入尺寸
+
+`--width` sets the SVG **display** width for README embeds. The internal `viewBox` stays `0 0 860 300`, so fish and layout scale proportionally — never squash.
+
+`--width` 只改 SVG 的展示宽；内部 `viewBox` 仍是 `0 0 860 300`，鱼和构图等比缩放，不会挤扁。
+
+| Flag | Default | |
+| --- | --- | --- |
+| `--width` | `860` | Display width in px · 展示宽度 |
+| `--height` | proportional · 等比 | Display height; omit to keep aspect · 省略则保持比例 |
+
+```bash
+# Narrower card for a profile README · 主页 README 窄卡
+npx contrib-aquarium generate --user YOUR_LOGIN --width 640 --out aquarium.svg
+
+# Then embed without an extra HTML width attribute · 嵌入时不必再写 HTML width
+# <img src="aquarium.svg" alt="My contribution aquarium" />
+```
+
+---
+
 ## Embed daily · 每日嵌入
 
 Copy [`examples/github-action.yml`](examples/github-action.yml) into your **profile** repo (`USER/USER`) as `.github/workflows/aquarium.yml`. It runs on a daily cron + `workflow_dispatch`, uses this repo as a composite action, and commits `aquarium.svg` when the tank changed.
@@ -175,6 +196,7 @@ GitHub 的 Camo 代理可能短暂缓存缩略图；仓库里的文件是新的�
 contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--source auto|graphql|events|mock]
                           [--theme deep|reef|midnight]
+                          [--width <px>] [--height <px>]
                           [--token <gh_token>]
 ```
 
@@ -184,6 +206,8 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--out` | `aquarium.svg` | Output path (dirs created) |
 | `--source` | `auto` | See data sources |
 | `--theme` | `deep` | `deep` · `reef` · `midnight` |
+| `--width` | `860` | Display width (viewBox fixed) · 展示宽 |
+| `--height` | proportional · 等比 | Display height · 展示高 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 
 ```bash
@@ -207,11 +231,14 @@ const { svg, activity } = await generateAquarium({
 });
 
 const svgFromMock = renderAquarium(mockActivity("webywz", new Date("2026-10-29")));
+
+// Narrower embed · 窄嵌入（viewBox 仍 860×300）
+const narrow = renderAquarium(mockActivity("webywz"), "deep", { width: 640 });
 ```
 
-Also exported: `loadActivity`, `fetchGraphqlActivity`, `fetchEventsActivity`, `getTheme`, `parseTheme`, `THEME_NAMES`, and size helpers. Types ship with the package.
+Also exported: `loadActivity`, `fetchGraphqlActivity`, `fetchEventsActivity`, `getTheme`, `parseTheme`, `THEME_NAMES`, `resolveSvgDisplaySize`, and size helpers. Types ship with the package.
 
-另导出活动加载、主题解析与尺寸常量；TypeScript 类型随包发布。
+另导出活动加载、主题解析、`resolveSvgDisplaySize` 与尺寸常量；TypeScript 类型随包发布。
 
 ---
 

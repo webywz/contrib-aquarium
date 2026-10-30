@@ -7,11 +7,29 @@ import type {
   FishModel,
   PlantModel,
   ReefColumn,
+  SvgSizeOptions,
 } from "./types.js";
 import { escapeXml, formatRange } from "./util.js";
 
 export const SVG_WIDTH = 860;
 export const SVG_HEIGHT = 300;
+
+
+/** Resolve SVG presentation size. viewBox stays SVG_WIDTH×SVG_HEIGHT so fish never stretch. */
+export function resolveSvgDisplaySize(size?: SvgSizeOptions): { width: number; height: number } {
+  const aspect = SVG_HEIGHT / SVG_WIDTH;
+  if (size?.width !== undefined && size?.height !== undefined) {
+    return { width: size.width, height: size.height };
+  }
+  if (size?.width !== undefined) {
+    return { width: size.width, height: Math.round(size.width * aspect) };
+  }
+  if (size?.height !== undefined) {
+    return { width: Math.round(size.height / aspect), height: size.height };
+  }
+  return { width: SVG_WIDTH, height: SVG_HEIGHT };
+}
+
 
 function fmt(n: number, digits = 2): string {
   return n.toFixed(digits).replace(/\.?0+$/, "");
@@ -282,9 +300,14 @@ function surface(): string {
     <path class="shimmer" fill="none" stroke="rgba(186,232,228,0.45)" stroke-width="1.1" d="M24,22 Q140,14 250,24 T480,20 T836,26"/>`;
 }
 
-export function renderAquarium(activity: Activity, themeName: ThemeName = "deep"): string {
+export function renderAquarium(
+  activity: Activity,
+  themeName: ThemeName = "deep",
+  size?: SvgSizeOptions,
+): string {
   const theme = getTheme(themeName);
   const model = mapAquarium(activity, themeName);
+  const { width: displayW, height: displayH } = resolveSvgDisplaySize(size);
   const label = escapeXml(
     `GitHub contribution aquarium for ${activity.login} — ${activity.totalContributions} contributions`,
   );
@@ -299,7 +322,7 @@ export function renderAquarium(activity: Activity, themeName: ThemeName = "deep"
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}" data-theme="${theme.name}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${displayW}" height="${displayH}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}" data-theme="${theme.name}">
   <title>${label}</title>
   ${defs(theme)}
   ${styles(model)}

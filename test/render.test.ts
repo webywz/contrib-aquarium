@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { mockActivity } from "../src/activity.js";
 import { mapAquarium, mapFishCount } from "../src/mapping.js";
-import { countSvgElements, renderAquarium, SVG_HEIGHT, SVG_WIDTH } from "../src/render.js";
+import {
+  countSvgElements,
+  renderAquarium,
+  resolveSvgDisplaySize,
+  SVG_HEIGHT,
+  SVG_WIDTH,
+} from "../src/render.js";
 import type { Activity } from "../src/types.js";
 
 const FROZEN = new Date("2026-10-29T00:00:00Z");
@@ -71,5 +77,44 @@ describe("renderAquarium", () => {
     assert.match(svg, /data-source="graphql"/);
     assert.match(svg, /data-total="74"/);
     assert.doesNotMatch(svg, /demo pattern from username/);
+  });
+
+  it("scales display size with width while keeping viewBox fixed", () => {
+    const svg = renderAquarium(mockActivity("wide-user", FROZEN), "deep", { width: 430 });
+    assert.match(svg, /width="430"/);
+    assert.match(svg, /height="150"/);
+    assert.match(svg, new RegExp(`viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}"`));
+    assert.match(svg, /preserveAspectRatio="xMidYMid meet"/);
+  });
+
+  it("accepts an explicit height without changing viewBox", () => {
+    const svg = renderAquarium(mockActivity("tall-user", FROZEN), "deep", {
+      width: 640,
+      height: 200,
+    });
+    assert.match(svg, /width="640"/);
+    assert.match(svg, /height="200"/);
+    assert.match(svg, new RegExp(`viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}"`));
+  });
+
+  it("defaults to the classic 860×300 display size", () => {
+    const svg = renderAquarium(mockActivity("default-size", FROZEN));
+    assert.match(svg, new RegExp(`width="${SVG_WIDTH}"`));
+    assert.match(svg, new RegExp(`height="${SVG_HEIGHT}"`));
+  });
+});
+
+describe("resolveSvgDisplaySize", () => {
+  it("keeps defaults when unset", () => {
+    assert.deepEqual(resolveSvgDisplaySize(), { width: SVG_WIDTH, height: SVG_HEIGHT });
+  });
+
+  it("derives height from width", () => {
+    assert.deepEqual(resolveSvgDisplaySize({ width: 860 }), { width: 860, height: 300 });
+    assert.deepEqual(resolveSvgDisplaySize({ width: 430 }), { width: 430, height: 150 });
+  });
+
+  it("derives width from height", () => {
+    assert.deepEqual(resolveSvgDisplaySize({ height: 150 }), { width: 430, height: 150 });
   });
 });

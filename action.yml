@@ -20,6 +20,14 @@ inputs:
     description: "Color theme: deep, reef, or midnight"
     required: false
     default: deep
+  width:
+    description: "SVG display width in px (default 860); viewBox stays proportional"
+    required: false
+    default: ""
+  height:
+    description: "SVG display height in px (default: proportional to width)"
+    required: false
+    default: ""
   token:
     description: GitHub token used for GraphQL (defaults to the workflow token)
     required: false
@@ -42,9 +50,18 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
-      run: >
-        node "${{ github.action_path }}/dist/cli.js" generate
-        --user "${{ inputs.user }}"
-        --out "${{ github.workspace }}/${{ inputs.out }}"
-        --source "${{ inputs.source }}"
-        --theme "${{ inputs.theme }}"
+      run: |
+        ARGS=(
+          generate
+          --user "${{ inputs.user }}"
+          --out "${{ github.workspace }}/${{ inputs.out }}"
+          --source "${{ inputs.source }}"
+          --theme "${{ inputs.theme }}"
+        )
+        if [ -n "${{ inputs.width }}" ]; then
+          ARGS+=(--width "${{ inputs.width }}")
+        fi
+        if [ -n "${{ inputs.height }}" ]; then
+          ARGS+=(--height "${{ inputs.height }}")
+        fi
+        node "${{ github.action_path }}/dist/cli.js" "${ARGS[@]}"

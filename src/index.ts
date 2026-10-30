@@ -1,6 +1,6 @@
 export { generateAquarium } from "./generate.js";
 export { loadActivity, mockActivity, fetchGraphqlActivity, fetchEventsActivity, ActivityError } from "./activity.js";
-export { renderAquarium, SVG_WIDTH, SVG_HEIGHT, countSvgElements } from "./render.js";
+export { renderAquarium, resolveSvgDisplaySize, SVG_WIDTH, SVG_HEIGHT, countSvgElements } from "./render.js";
 export {
   mapAquarium,
   mapFishCount,
@@ -20,6 +20,7 @@ export type {
   GenerateResult,
   LoadOptions,
   LoadSource,
+  SvgSizeOptions,
 } from "./types.js";
 export { FISH_MIN, FISH_MAX, PLANT_MIN, PLANT_MAX, BUBBLE_MIN, BUBBLE_MAX } from "./types.js";
 export { getTheme, parseTheme, THEME_NAMES } from "./theme.js";
