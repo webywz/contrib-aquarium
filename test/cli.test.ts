@@ -221,4 +221,70 @@ describe("CLI", () => {
     assert.equal(result.code, 1);
     assert.match(result.stderr, /Invalid --width/);
   });
+
+  it("prints JSON summary with --json", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "json-demo",
+      "--source",
+      "mock",
+      "--json",
+    ]);
+    assert.equal(result.code, 0, result.stderr);
+    const json = JSON.parse(result.stdout) as {
+      login: string;
+      name: string | null;
+      totalContributions: number;
+      source: string;
+      range: { from: string; to: string };
+      streak: number;
+      activeDays: number;
+      recent14: number;
+      fishCount: number;
+      plantCount: number;
+      bubbleCount: number;
+    };
+    assert.equal(json.login, "json-demo");
+    assert.equal(json.source, "mock");
+    assert.equal(typeof json.totalContributions, "number");
+    assert.equal(typeof json.streak, "number");
+    assert.equal(typeof json.activeDays, "number");
+    assert.equal(typeof json.recent14, "number");
+    assert.equal(typeof json.fishCount, "number");
+    assert.equal(typeof json.plantCount, "number");
+    assert.equal(typeof json.bubbleCount, "number");
+    assert.ok(json.range.from);
+    assert.ok(json.range.to);
+  });
+
+  it("documents --json in help", async () => {
+    const result = await runCli(["--help"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /--json/);
+    assert.match(result.stdout, /JSON/);
+  });
+
+  it("default SVG path still works (smoke test)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-svg-smoke-"));
+    const out = join(dir, "smoke.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "svg-smoke",
+        "--source",
+        "mock",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /<svg /);
+      assert.match(svg, /data-user="svg-smoke"/);
+      assert.match(svg, /viewBox="0 0 860 300"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });
