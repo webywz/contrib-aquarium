@@ -10,10 +10,20 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const tsxBin = join(root, "node_modules", ".bin", "tsx");
 
-async function runCli(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+async function runCli(
+  args: string[],
+  env: NodeJS.ProcessEnv = {},
+): Promise<{ code: number; stdout: string; stderr: string }> {
   const child = spawn(tsxBin, ["src/cli.ts", ...args], {
     cwd: root,
-    env: { ...process.env, GITHUB_TOKEN: "", GH_TOKEN: "" },
+    env: {
+      ...process.env,
+      GITHUB_TOKEN: "",
+      GH_TOKEN: "",
+      GITHUB_STEP_SUMMARY: "",
+      GITHUB_OUTPUT: "",
+      ...env,
+    },
   });
   let stdout = "";
   let stderr = "";
@@ -481,5 +491,204 @@ describe("CLI", () => {
     const result = await runCli(["--help", "--locale", "fr"]);
     assert.equal(result.code, 2);
     assert.match(result.stderr, /Unknown --locale/);
+  });
+
+  it("documents --github in help (en + zh)", async () => {
+    const en = await runCli(["--help"]);
+    const zh = await runCli(["--help", "--locale", "zh"]);
+    assert.equal(en.code, 0);
+    assert.equal(zh.code, 0);
+    assert.match(en.stdout, /--github/);
+    assert.match(en.stdout, /::notice::/);
+    assert.match(en.stdout, /GITHUB_STEP_SUMMARY/);
+    assert.match(zh.stdout, /--github/);
+    assert.match(zh.stdout, /::notice::/);
+    assert.match(zh.stdout, /GITHUB_STEP_SUMMARY/);
+  });
+
+  it("emits a success notice with --github", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-gh-ok-"));
+    const out = join(dir, "tank.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "cli-github",
+        "--source",
+        "mock",
+        "--theme",
+        "reef",
+        "--out",
+        out,
+        "--github",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stderr, /::notice::cli-github · theme=reef · /);
+      assert.match(result.stderr, /fish=\d+/);
+      assert.match(result.stderr, /activity=\d+/);
+      assert.match(result.stderr, /source=mock/);
+      assert.equal(result.stdout.trim(), "");
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-user="cli-github"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits ::error:: on usage errors with --github", async () => {
+    const result = await runCli(["generate", "--github"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Missing --user/);
+    assert.match(result.stderr, /::error::Missing --user <login>/);
+    assert.doesNotMatch(result.stderr, /::notice::/);
+  });
+
+  it("keeps --json stdout parseable when combined with --github", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "json-github",
+      "--source",
+      "mock",
+      "--json",
+      "--github",
+    ]);
+    assert.equal(result.code, 0, result.stderr);
+    const json = JSON.parse(result.stdout) as {
+      login: string;
+      source: string;
+      fishCount: number;
+      totalContributions: number;
+    };
+    assert.equal(json.login, "json-github");
+    assert.equal(json.source, "mock");
+    assert.equal(typeof json.fishCount, "number");
+    assert.doesNotMatch(result.stdout, /::(error|warning|notice)::/);
+    assert.match(result.stderr, /::notice::json-github · theme=deep · json · fish=/);
+    assert.match(result.stderr, /activity=/);
+  });
+
+  it("keeps --github annotations with --quiet (no pretty summary)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-gh-quiet-"));
+    const out = join(dir, "quiet.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "quiet-github",
+        "--source",
+        "mock",
+        "--out",
+        out,
+        "--quiet",
+        "--github",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stderr, /::notice::quiet-github · theme=deep · /);
+      assert.doesNotMatch(result.stderr, /source=mock/);
+      assert.equal(result.stdout.trim(), "");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("emits no workflow commands without --github", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-no-gh-"));
+    const out = join(dir, "tank.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "no-github",
+        "--source",
+        "mock",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.doesNotMatch(result.stdout, /::/);
+      assert.doesNotMatch(result.stderr, /::/);
+      assert.match(result.stderr, /source=mock/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not annotate usage errors without --github", async () => {
+    const result = await runCli(["generate"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Missing --user/);
+    assert.doesNotMatch(result.stderr, /::/);
+    assert.doesNotMatch(result.stdout, /::/);
+  });
+
+  it("notices successful --list-themes with --github", async () => {
+    const result = await runCli(["--list-themes", "--github"]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.deepEqual(result.stdout.trim().split("\n"), [
+      "deep",
+      "reef",
+      "midnight",
+      "lagoon",
+      "ember",
+      "fog",
+    ]);
+    assert.match(result.stderr, /::notice::listed 6 themes$/m);
+    assert.doesNotMatch(result.stdout, /::/);
+  });
+
+  it("writes GITHUB_STEP_SUMMARY with --github", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-gh-sum-"));
+    const out = join(dir, "tank.svg");
+    const summary = join(dir, "step_summary.md");
+    try {
+      const result = await runCli(
+        [
+          "generate",
+          "--user",
+          "sum-github",
+          "--source",
+          "mock",
+          "--out",
+          out,
+          "--github",
+        ],
+        { GITHUB_STEP_SUMMARY: summary },
+      );
+      assert.equal(result.code, 0, result.stderr);
+      const body = await readFile(summary, "utf8");
+      assert.match(body, /## contrib-aquarium/);
+      assert.match(body, /\*\*User\*\*/);
+      assert.match(body, /sum-github/);
+      assert.match(body, /\*\*Fish\*\*/);
+      assert.match(body, /\*\*Activity\*\*/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not write GITHUB_STEP_SUMMARY without --github", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-no-sum-"));
+    const out = join(dir, "tank.svg");
+    const summary = join(dir, "step_summary.md");
+    try {
+      const result = await runCli(
+        [
+          "generate",
+          "--user",
+          "no-sum",
+          "--source",
+          "mock",
+          "--out",
+          out,
+        ],
+        { GITHUB_STEP_SUMMARY: summary },
+      );
+      assert.equal(result.code, 0, result.stderr);
+      await assert.rejects(readFile(summary, "utf8"), /ENOENT/);
+      assert.doesNotMatch(result.stderr, /::/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
