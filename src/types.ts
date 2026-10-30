@@ -36,6 +36,8 @@ export type SvgSizeOptions = {
   width?: number;
   /** Display height in px; defaults to proportional when only width is set. */
   height?: number;
+  /** When true, strip all animations so fish and plants rest. */
+  static?: boolean;
 };
 
 export type GenerateOptions = LoadOptions & {

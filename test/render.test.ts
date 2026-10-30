@@ -102,6 +102,38 @@ describe("renderAquarium", () => {
     assert.match(svg, new RegExp(`width="${SVG_WIDTH}"`));
     assert.match(svg, new RegExp(`height="${SVG_HEIGHT}"`));
   });
+
+  it("strips animations when static option is true", () => {
+    const activity = mockActivity("static-demo", FROZEN);
+    const animated = renderAquarium(activity, "deep");
+    const static_svg = renderAquarium(activity, "deep", { static: true });
+    
+    assert.match(animated, /animation-name:/);
+    assert.match(animated, /@keyframes swim/);
+    assert.match(animated, /<animate /);
+    
+    assert.doesNotMatch(static_svg, /animation-name:/);
+    assert.doesNotMatch(static_svg, /@keyframes/);
+    assert.doesNotMatch(static_svg, /<animate /);
+  });
+
+  it("places fish at rest position when static", () => {
+    const activity = mockActivity("static-demo", FROZEN);
+    const static_svg = renderAquarium(activity, "deep", { static: true });
+    
+    assert.match(static_svg, /--rest-x:/);
+    assert.match(static_svg, /transform="translate\(/);
+  });
+
+  it("keeps default behavior without static flag", () => {
+    const activity = mockActivity("animated-demo", FROZEN);
+    const defaultSvg = renderAquarium(activity, "deep");
+    const explicitAnimated = renderAquarium(activity, "deep", { static: false });
+    
+    assert.equal(defaultSvg, explicitAnimated);
+    assert.match(defaultSvg, /animation-name:/);
+    assert.match(defaultSvg, /<animate /);
+  });
 });
 
 describe("resolveSvgDisplaySize", () => {

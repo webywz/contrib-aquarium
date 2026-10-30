@@ -12,7 +12,7 @@ type FlagMap = Record<string, string | boolean>;
 /** Usage / argv errors — matches other webywz CLIs that reserve 2 for usage. */
 const USAGE_EXIT = 2;
 
-const BOOLEAN_FLAGS = new Set(["help", "version", "quiet"]);
+const BOOLEAN_FLAGS = new Set(["help", "version", "quiet", "static", "no-animate"]);
 const VALUE_FLAGS = new Set(["user", "out", "source", "theme", "width", "height", "token"]);
 
 function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMap } {
@@ -65,22 +65,25 @@ Turn a GitHub year into a living SVG aquarium.
 Usage:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
                             [--source auto|graphql|events|mock]
-                            [--theme deep|reef|midnight]
+                            [--theme deep|reef|midnight|lagoon|ember|fog]
                             [--width <px>] [--height <px>]
+                            [--static | --no-animate]
                             [--token <gh_token>]
                             [--quiet]
 
 Options:
-  --user      GitHub login (required)
-  --out       Output path (default: aquarium.svg)
-  --source    auto (default), graphql, events, or mock
-  --theme     Color theme: deep (default), reef, or midnight
-  --width     SVG display width in px (default: 860); viewBox stays 860×300
-  --height    SVG display height in px (default: proportional to --width)
-  --token     GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
-  --quiet     Suppress the success summary line
-  --help      Show this message
-  --version   Print version
+  --user         GitHub login (required)
+  --out          Output path (default: aquarium.svg)
+  --source       auto (default), graphql, events, or mock
+  --theme        Color theme: deep (default), reef, midnight, lagoon, ember, or fog
+  --width        SVG display width in px (default: 860); viewBox stays 860×300
+  --height       SVG display height in px (default: proportional to --width)
+  --static       Strip animations; fish and plants rest (same as --no-animate)
+  --no-animate   Strip animations; fish and plants rest (same as --static)
+  --token        GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
+  --quiet        Suppress the success summary line
+  --help         Show this message
+  --version      Print version
 
 Data sources (auto):
   1. GraphQL contributionsCollection   requires a token, full last-year calendar
@@ -89,6 +92,7 @@ Data sources (auto):
 
 The SVG is self-contained (CSS + SMIL). Drop it in a README as an image.
 Use --width for narrower README embeds without squashing the fish.
+Use --static when you need a still image (e.g. for printing or email).
 `;
 }
 
@@ -147,6 +151,7 @@ async function run(argv: string[]): Promise<number> {
 
   const out = resolve(asString(flags.out) ?? "aquarium.svg");
   const quiet = Boolean(flags.quiet);
+  const static_mode = Boolean(flags.static || flags["no-animate"]);
   try {
     const theme = parseTheme(asString(flags.theme));
     const width = parsePositiveNumber("width", flags.width);
@@ -158,6 +163,7 @@ async function run(argv: string[]): Promise<number> {
       theme,
       width,
       height,
+      static: static_mode,
     });
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, svg, "utf8");

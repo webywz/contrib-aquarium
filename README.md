@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.4 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.5 · Node.js 18.18+
 
 ---
 
@@ -143,9 +143,13 @@ Empty years still get a few wanderers. Same username + calendar snapshot → sam
 | `deep` (default) | Classic dark teal · 默认深青 |
 | `reef` | Warmer tropical water · 暖色珊瑚 |
 | `midnight` | Violet night, neon accents · 午夜紫 |
+| `lagoon` | Fresh green aquatic · 清新绿调 |
+| `ember` | Warm amber glow · 琥珀暖光 |
+| `fog` | Cool misty gray · 冷雾灰调 |
 
 ```bash
 npx contrib-aquarium generate --user YOUR_LOGIN --theme midnight --out aquarium.svg
+npx contrib-aquarium generate --user YOUR_LOGIN --theme ember --out aquarium.svg
 ```
 
 ---
@@ -171,18 +175,39 @@ npx contrib-aquarium generate --user YOUR_LOGIN --width 640 --out aquarium.svg
 
 ---
 
+## Static mode · 静态模式
+
+`--static` (or `--no-animate`) strips all CSS animations and SMIL `<animate>` tags, so fish and plants rest in place. Useful for printing, email newsletters, or embedding where animations aren't wanted.
+
+`--static`（或 `--no-animate`）移除所有 CSS 动画和 SMIL `<animate>` 标签，让鱼和海藻静止。适合打印、邮件简报，或不需要动画的嵌入场景。
+
+```bash
+# Static aquarium for print or email · 静态鱼缸，用于打印或邮件
+npx contrib-aquarium generate --user YOUR_LOGIN --static --out aquarium-static.svg
+
+# Works with all themes and sizes · 适用于所有主题和尺寸
+npx contrib-aquarium generate --user YOUR_LOGIN --theme ember --static --width 640 --out static-ember.svg
+```
+
+Default behavior (without `--static`) includes full animations. The `prefers-reduced-motion` media query already pauses motion for users who request it, but `--static` removes animations entirely from the file.
+
+默认行为（不加 `--static`）包含完整动画。`prefers-reduced-motion` 媒体查询已为需要的用户暂停动效，而 `--static` 则从文件中完全移除动画。
+
+---
+
 ## Embed daily · 每日嵌入
 
 Copy [`examples/github-action.yml`](examples/github-action.yml) into your **profile** repo (`USER/USER`) as `.github/workflows/aquarium.yml`. It runs on a daily cron + `workflow_dispatch`, uses this repo as a composite action, and commits `aquarium.svg` when the tank changed.
 
 ```yaml
 # Pin a release tag — avoid @main.
-- uses: webywz/contrib-aquarium@v0.1.4
+- uses: webywz/contrib-aquarium@v0.1.5
   with:
     user: ${{ github.repository_owner }}
     out: aquarium.svg
     # theme: reef
     # width: 640
+    # static: false
 ```
 
 This project's demo refreshes the same way: [`.github/workflows/daily-aquarium.yml`](.github/workflows/daily-aquarium.yml) updates [`docs/aquarium.svg`](docs/aquarium.svg) for `webywz`.
@@ -198,8 +223,9 @@ GitHub 的 Camo 代理可能短暂缓存缩略图；仓库里的文件是新的�
 ```
 contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--source auto|graphql|events|mock]
-                          [--theme deep|reef|midnight]
+                          [--theme deep|reef|midnight|lagoon|ember|fog]
                           [--width <px>] [--height <px>]
+                          [--static | --no-animate]
                           [--token <gh_token>]
                           [--quiet]
 ```
@@ -209,9 +235,11 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--user` | required | GitHub login |
 | `--out` | `aquarium.svg` | Output path (dirs created) |
 | `--source` | `auto` | See data sources |
-| `--theme` | `deep` | `deep` · `reef` · `midnight` |
+| `--theme` | `deep` | `deep` · `reef` · `midnight` · `lagoon` · `ember` · `fog` |
 | `--width` | `860` | Display width (viewBox fixed) · 展示宽 |
 | `--height` | proportional · 等比 | Display height · 展示高 |
+| `--static` | off | Strip animations; fish rest · 移除动画 |
+| `--no-animate` | off | Same as `--static` · 等同 `--static` |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
 

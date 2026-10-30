@@ -1,4 +1,4 @@
-export const THEME_NAMES = ["deep", "reef", "midnight"] as const;
+export const THEME_NAMES = ["deep", "reef", "midnight", "lagoon", "ember", "fog"] as const;
 export type ThemeName = (typeof THEME_NAMES)[number];
 
 export type Theme = {
@@ -83,10 +83,79 @@ const MIDNIGHT: Theme = {
   reef: ["#3a3550", "#524a70", "#6a6090"],
 };
 
+const LAGOON: Theme = {
+  name: "lagoon",
+  water: ["#145a4a", "#0a3a2e", "#051c18"],
+  glow: { color: "#3aa878", mid: "#145a48" },
+  sand: ["#8a7a5a", "#4a3a28"],
+  film: "#98d8c8",
+  glass: "#d8f8f0",
+  kelp: ["#1a5a42", "#2a7a56", "#14483a", "#3a9a68"],
+  fish: [
+    { body: "#88d0b0", accent: "#48a878" },
+    { body: "#d0e8a0", accent: "#98c068" },
+    { body: "#b0e0d8", accent: "#68a8a0" },
+    { body: "#f8e8b8", accent: "#d0b068" },
+    { body: "#a8d8e8", accent: "#68a0c8" },
+    { body: "#e8c8a8", accent: "#c09868" },
+  ],
+  caption: { title: "#d8f8e8", meta: "#a8c8b8", note: "rgba(186,224,208,0.6)" },
+  ray: ["#68c8a8", "#88e0c0", "#a8f0d8"],
+  rock: ["#2a2820", "#3a3830", "#4a4840"],
+  reef: ["#6a6850", "#8a8870", "#aaa890"],
+};
+
+const EMBER: Theme = {
+  name: "ember",
+  water: ["#4a2418", "#2e140c", "#180a06"],
+  glow: { color: "#d86838", mid: "#6a3420" },
+  sand: ["#6a4830", "#3a2818"],
+  film: "#e89868",
+  glass: "#f8d8c0",
+  kelp: ["#4a2820", "#6a3828", "#3a1c18", "#8a4838"],
+  fish: [
+    { body: "#f8a858", accent: "#d87828" },
+    { body: "#f8d868", accent: "#e0a838" },
+    { body: "#e86848", accent: "#c83828" },
+    { body: "#f8c888", accent: "#d89858" },
+    { body: "#d87858", accent: "#a84838" },
+    { body: "#f0b078", accent: "#c08048" },
+  ],
+  caption: { title: "#f8e8d8", meta: "#c8a898", note: "rgba(232,192,168,0.55)" },
+  ray: ["#e88858", "#f8a878", "#f8c898"],
+  rock: ["#281814", "#382420", "#48302c"],
+  reef: ["#5a3828", "#7a5040", "#9a6858"],
+};
+
+const FOG: Theme = {
+  name: "fog",
+  water: ["#3a3e42", "#22262a", "#10141a"],
+  glow: { color: "#7a8690", mid: "#3a4450" },
+  sand: ["#6a6668", "#3a3638"],
+  film: "#b0b8c0",
+  glass: "#e0e8f0",
+  kelp: ["#3a4248", "#4a5860", "#2a3238", "#5a6870"],
+  fish: [
+    { body: "#b0c0d0", accent: "#6a8090" },
+    { body: "#d8d0c8", accent: "#a89888" },
+    { body: "#c8b8b0", accent: "#988878" },
+    { body: "#a8b8c8", accent: "#687888" },
+    { body: "#d0c8c0", accent: "#a09890" },
+    { body: "#b8c8d8", accent: "#7890a8" },
+  ],
+  caption: { title: "#e8e8e8", meta: "#b0b0b0", note: "rgba(200,200,208,0.5)" },
+  ray: ["#98a8b8", "#b8c8d8", "#d8e0e8"],
+  rock: ["#202428", "#303438", "#404448"],
+  reef: ["#50545a", "#70747a", "#90949a"],
+};
+
 const THEMES: Record<ThemeName, Theme> = {
   deep: DEEP,
   reef: REEF,
   midnight: MIDNIGHT,
+  lagoon: LAGOON,
+  ember: EMBER,
+  fog: FOG,
 };
 
 export function parseTheme(value: string | undefined): ThemeName {

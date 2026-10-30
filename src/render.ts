@@ -87,12 +87,17 @@ function fishPaths(fish: FishModel): string {
     <circle cx="${fmt(s * 0.3)}" cy="${fmt(-s * 0.045)}" r="${fmt(eye * 0.32)}" fill="#eef6f4"/>`;
 }
 
-function drawFish(fish: FishModel): string {
+function drawFish(fish: FishModel, static_mode = false): string {
   const flip = fish.reverse ? ` transform="scale(-1,1)"` : "";
   const direction = fish.reverse ? "reverse" : "normal";
-  return `<g class="lane" data-el="fish" data-species="${fish.species}" style="animation-duration:${fmt(fish.duration, 2)}s;animation-delay:-${fmt(fish.delay, 2)}s;animation-direction:${direction};--rest-x:${fmt(fish.restX, 1)}px;--wag:${fmt(fish.wag, 2)}s">
+  const restTransform = static_mode ? ` transform="translate(${fmt(fish.restX, 1)}px,0)"` : "";
+  const laneStyle = static_mode
+    ? `--rest-x:${fmt(fish.restX, 1)}px;--wag:${fmt(fish.wag, 2)}s`
+    : `animation-duration:${fmt(fish.duration, 2)}s;animation-delay:-${fmt(fish.delay, 2)}s;animation-direction:${direction};--rest-x:${fmt(fish.restX, 1)}px;--wag:${fmt(fish.wag, 2)}s`;
+  const bobStyle = static_mode ? "" : `style="animation-duration:${fmt(fish.bob, 2)}s;animation-delay:-${fmt(fish.delay % fish.bob, 2)}s"`;
+  return `<g class="lane" data-el="fish" data-species="${fish.species}" style="${laneStyle}"${restTransform}>
     <g transform="translate(0,${fmt(fish.y, 1)})">
-      <g class="bob" style="animation-duration:${fmt(fish.bob, 2)}s;animation-delay:-${fmt(fish.delay % fish.bob, 2)}s">
+      <g class="bob" ${bobStyle}>
         <g${flip}>
           ${fishPaths(fish)}
         </g>
@@ -109,7 +114,7 @@ function bladePath(x: number, height: number, lean: number, width: number): stri
     Q ${fmt(x + lean * 0.55 + width, 1)} ${fmt(268 - height * 0.62, 1)} ${fmt(x + width * 0.35, 1)} 268 Z`;
 }
 
-function drawPlant(plant: PlantModel, theme: Theme): string {
+function drawPlant(plant: PlantModel, theme: Theme, static_mode = false): string {
   const color = theme.kelp[plant.palette % theme.kelp.length];
   const blades: string[] = [];
   for (let i = 0; i < plant.blades; i++) {
@@ -120,11 +125,17 @@ function drawPlant(plant: PlantModel, theme: Theme): string {
       `<path d="${bladePath(plant.x + i * 3.2, h, lean, w)}" fill="${color}" opacity="${fmt(0.62 + i * 0.08, 2)}"/>`,
     );
   }
-  return `<g class="sway" data-el="plant" style="transform-origin:${fmt(plant.x, 1)}px 268px;animation-duration:${fmt(plant.duration, 2)}s;animation-delay:-${fmt(plant.delay, 2)}s">${blades.join("")}</g>`;
+  const swayStyle = static_mode
+    ? `transform-origin:${fmt(plant.x, 1)}px 268px`
+    : `transform-origin:${fmt(plant.x, 1)}px 268px;animation-duration:${fmt(plant.duration, 2)}s;animation-delay:-${fmt(plant.delay, 2)}s`;
+  return `<g class="sway" data-el="plant" style="${swayStyle}">${blades.join("")}</g>`;
 }
 
-function drawBubble(bubble: BubbleModel): string {
-  return `<g class="rise" data-el="bubble" style="animation-duration:${fmt(bubble.duration, 2)}s;animation-delay:-${fmt(bubble.delay, 2)}s;transform-origin:${fmt(bubble.x, 1)}px ${fmt(bubble.startY, 1)}px">
+function drawBubble(bubble: BubbleModel, static_mode = false): string {
+  const riseStyle = static_mode
+    ? `transform-origin:${fmt(bubble.x, 1)}px ${fmt(bubble.startY, 1)}px`
+    : `animation-duration:${fmt(bubble.duration, 2)}s;animation-delay:-${fmt(bubble.delay, 2)}s;transform-origin:${fmt(bubble.x, 1)}px ${fmt(bubble.startY, 1)}px`;
+  return `<g class="rise" data-el="bubble" style="${riseStyle}">
     <circle cx="${fmt(bubble.x, 1)}" cy="${fmt(bubble.startY, 1)}" r="${fmt(bubble.r, 2)}" fill="rgba(186,226,232,0.22)" stroke="rgba(226,248,252,0.45)" stroke-width="0.6"/>
     <circle cx="${fmt(bubble.x - bubble.r * 0.28, 1)}" cy="${fmt(bubble.startY - bubble.r * 0.3, 1)}" r="${fmt(Math.max(0.4, bubble.r * 0.28), 2)}" fill="rgba(255,255,255,0.45)"/>
   </g>`;
@@ -217,8 +228,14 @@ function defs(theme: Theme): string {
   </defs>`;
 }
 
-function styles(model: AquariumModel): string {
+function styles(model: AquariumModel, static_mode = false): string {
   const sway = (2.2 + model.turbulence * 2.4).toFixed(2);
+  if (static_mode) {
+    return `<style>
+    .lane { transform: translateX(var(--rest-x, 220px)); }
+    .bob, .wag, .sway, .rise, .ray, .shimmer { }
+  </style>`;
+  }
   return `<style>
     .lane { animation-name: swim; animation-timing-function: linear; animation-iteration-count: infinite; }
     .bob { animation-name: bob; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
@@ -289,7 +306,12 @@ function rays(theme: Theme): string {
     </g>`;
 }
 
-function surface(): string {
+function surface(static_mode = false): string {
+  if (static_mode) {
+    return `
+    <path fill="url(#film)" d="M10,10 H850 V40 Q645,52 430,34 T10,42 Z"/>
+    <path class="shimmer" fill="none" stroke="rgba(186,232,228,0.45)" stroke-width="1.1" d="M24,22 Q140,14 250,24 T480,20 T836,26"/>`;
+  }
   return `
     <path fill="url(#film)" d="M10,10 H850 V40 Q645,52 430,34 T10,42 Z">
       <animate attributeName="d" dur="8s" repeatCount="indefinite"
@@ -307,6 +329,7 @@ export function renderAquarium(
 ): string {
   const theme = getTheme(themeName);
   const model = mapAquarium(activity, themeName);
+  const static_mode = size?.static ?? false;
   const { width: displayW, height: displayH } = resolveSvgDisplaySize(size);
   const label = escapeXml(
     `GitHub contribution aquarium for ${activity.login} — ${activity.totalContributions} contributions`,
@@ -314,18 +337,18 @@ export function renderAquarium(
 
   const plantsBack = model.plants
     .filter((_, i) => i % 2 === 0)
-    .map((p) => drawPlant(p, theme))
+    .map((p) => drawPlant(p, theme, static_mode))
     .join("");
   const plantsFront = model.plants
     .filter((_, i) => i % 2 === 1)
-    .map((p) => drawPlant(p, theme))
+    .map((p) => drawPlant(p, theme, static_mode))
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${displayW}" height="${displayH}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}" data-theme="${theme.name}">
   <title>${label}</title>
   ${defs(theme)}
-  ${styles(model)}
+  ${styles(model, static_mode)}
   <rect width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="24" fill="${theme.water[2]}"/>
   <g clip-path="url(#tank)">
     <rect x="10" y="10" width="840" height="280" fill="url(#water)"/>
@@ -338,11 +361,11 @@ export function renderAquarium(
     ${drawReef(model.reef, theme)}
     ${rocks(theme)}
     <g filter="url(#soft)">
-      ${model.fish.map(drawFish).join("")}
+      ${model.fish.map((f) => drawFish(f, static_mode)).join("")}
     </g>
     ${plantsFront}
-    ${model.bubbles.map(drawBubble).join("")}
-    ${surface()}
+    ${model.bubbles.map((b) => drawBubble(b, static_mode)).join("")}
+    ${surface(static_mode)}
     <rect x="10" y="10" width="840" height="280" fill="url(#glass)"/>
     ${caption(activity, model, theme)}
   </g>
