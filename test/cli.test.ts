@@ -321,4 +321,103 @@ describe("CLI", () => {
     assert.equal(result.code, 0);
     assert.match(result.stdout, /--list-themes/);
   });
+
+  it("shows help in Chinese with --locale zh", async () => {
+    const result = await runCli(["--help", "--locale", "zh"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /将 GitHub 年度贡献转化成活体 SVG 鱼缸/);
+    assert.match(result.stdout, /用法:/);
+    assert.match(result.stdout, /选项:/);
+    assert.match(result.stdout, /--locale/);
+  });
+
+  it("shows help in English by default", async () => {
+    const result = await runCli(["--help"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /Turn a GitHub year into a living SVG aquarium/);
+    assert.match(result.stdout, /Usage:/);
+    assert.match(result.stdout, /Options:/);
+    assert.match(result.stdout, /--locale/);
+  });
+
+  it("shows help in English with --locale en", async () => {
+    const result = await runCli(["--help", "--locale", "en"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /Turn a GitHub year into a living SVG aquarium/);
+  });
+
+  it("shows error in Chinese with --locale zh for missing --user", async () => {
+    const result = await runCli(["generate", "--locale", "zh"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /缺少 --user/);
+  });
+
+  it("shows error in English by default for missing --user", async () => {
+    const result = await runCli(["generate"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Missing --user/);
+  });
+
+  it("shows error in Chinese for unknown option with --locale zh", async () => {
+    const result = await runCli(["generate", "--locale", "zh", "--user", "test", "--unknown"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /未知选项/);
+  });
+
+  it("JSON output is unchanged regardless of locale", async () => {
+    const enResult = await runCli([
+      "generate",
+      "--user",
+      "locale-test",
+      "--source",
+      "mock",
+      "--locale",
+      "en",
+      "--json",
+    ]);
+    const zhResult = await runCli([
+      "generate",
+      "--user",
+      "locale-test",
+      "--source",
+      "mock",
+      "--locale",
+      "zh",
+      "--json",
+    ]);
+    assert.equal(enResult.code, 0);
+    assert.equal(zhResult.code, 0);
+    const enJson = JSON.parse(enResult.stdout);
+    const zhJson = JSON.parse(zhResult.stdout);
+    assert.deepEqual(enJson, zhJson);
+    assert.equal(enJson.login, "locale-test");
+    assert.equal(enJson.source, "mock");
+  });
+
+  it("--list-themes output is unchanged with --locale zh", async () => {
+    const enResult = await runCli(["--list-themes"]);
+    const zhResult = await runCli(["--list-themes", "--locale", "zh"]);
+    assert.equal(enResult.code, 0);
+    assert.equal(zhResult.code, 0);
+    assert.equal(enResult.stdout, zhResult.stdout);
+    assert.match(enResult.stdout, /deep/);
+    assert.match(enResult.stdout, /reef/);
+  });
+
+  it("--list-themes --json output is unchanged with --locale zh", async () => {
+    const enResult = await runCli(["--list-themes", "--json"]);
+    const zhResult = await runCli(["--list-themes", "--json", "--locale", "zh"]);
+    assert.equal(enResult.code, 0);
+    assert.equal(zhResult.code, 0);
+    assert.equal(enResult.stdout, zhResult.stdout);
+    const enThemes = JSON.parse(enResult.stdout);
+    const zhThemes = JSON.parse(zhResult.stdout);
+    assert.deepEqual(enThemes, zhThemes);
+  });
+
+  it("rejects unknown locale value", async () => {
+    const result = await runCli(["--help", "--locale", "fr"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Unknown --locale/);
+  });
 });

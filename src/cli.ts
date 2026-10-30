@@ -7,6 +7,7 @@ import { parseTheme, THEME_NAMES } from "./theme.js";
 import { readPackageVersion } from "./util.js";
 import { currentStreak, flattenDays, mapBubbleCount, mapFishCount, mapPlantCount, recentTotal } from "./mapping.js";
 import type { LoadSource } from "./types.js";
+import { getErrorMessage, parseLocale, type Locale } from "./locale.js";
 
 type FlagMap = Record<string, string | boolean>;
 
@@ -14,7 +15,7 @@ type FlagMap = Record<string, string | boolean>;
 const USAGE_EXIT = 2;
 
 const BOOLEAN_FLAGS = new Set(["help", "version", "quiet", "static", "no-animate", "json", "list-themes"]);
-const VALUE_FLAGS = new Set(["user", "out", "source", "theme", "width", "height", "token"]);
+const VALUE_FLAGS = new Set(["user", "out", "source", "theme", "width", "height", "token", "locale"]);
 
 function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMap } {
   const args = argv.slice(2);
@@ -36,10 +37,10 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
       continue;
     }
     if (!arg.startsWith("-")) {
-      throw new Error(`Unexpected argument: ${arg}`);
+      throw new Error(`__UNEXPECTED_ARG__:${arg}`);
     }
     if (!arg.startsWith("--") || arg === "--") {
-      throw new Error(`Unknown option: ${arg}`);
+      throw new Error(`__UNKNOWN_OPTION__:${arg}`);
     }
     const key = arg.slice(2);
     if (BOOLEAN_FLAGS.has(key)) {
@@ -47,11 +48,11 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
       continue;
     }
     if (!VALUE_FLAGS.has(key)) {
-      throw new Error(`Unknown option: ${arg}`);
+      throw new Error(`__UNKNOWN_OPTION__:${arg}`);
     }
     const next = args[i + 1];
     if (!next || next.startsWith("-")) {
-      throw new Error(`Missing value for --${key}`);
+      throw new Error(`__MISSING_VALUE__:${key}`);
     }
     flags[key] = next;
     i += 1;
@@ -59,10 +60,69 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
   return { command, flags };
 }
 
-function help(): string {
-  return `contrib-aquarium ${readPackageVersion()}
-Turn a GitHub year into a living SVG aquarium.
+function help(locale: Locale): string {
+  const version = readPackageVersion();
+  if (locale === "zh") {
+    return `contrib-aquarium ${version}
 将 GitHub 年度贡献转化成活体 SVG 鱼缸。
+
+用法:
+  contrib-aquarium generate --user <login> [--out aquarium.svg]
+                            [--source auto|graphql|events|mock]
+                            [--theme deep|reef|midnight|lagoon|ember|fog]
+                            [--width <px>] [--height <px>]
+                            [--static | --no-animate]
+                            [--json]
+                            [--token <gh_token>]
+                            [--locale <en|zh>]
+                            [--quiet]
+  contrib-aquarium --list-themes [--json] [--locale <en|zh>]
+
+选项:
+  --user         GitHub 用户名（必填）
+  --out          输出路径（默认 aquarium.svg）
+  --source       数据源: auto（默认）、graphql、events 或 mock
+  --theme        配色主题: deep（默认）、reef、midnight、lagoon、ember 或 fog
+  --width        SVG 显示宽度（px，默认 860）；viewBox 保持 860×300
+  --height       SVG 显示高度（px，默认与 --width 等比）
+  --static       移除动画，鱼和植物静止（同 --no-animate）
+  --no-animate   移除动画，鱼和植物静止（同 --static）
+  --json         打印 JSON 摘要到标准输出而非 SVG（忽略 --out）
+  --token        GitHub token；回退到 GITHUB_TOKEN / GH_TOKEN
+  --locale       界面语言: en（默认）或 zh
+  --quiet        禁用成功摘要行
+  --list-themes  打印可用主题名称（每行一个；加 --json 则输出 JSON 数组）
+  --help         显示帮助
+  --version      打印版本
+
+数据源（auto 自动回退）:
+  1. GraphQL contributionsCollection   需 token，完整年历
+  2. Public events feed                公开事件流，无需 token
+  3. Deterministic mock from username  确定性演示，总能用
+
+SVG 自包含（CSS + SMIL），可作为图片直接嵌入 README。
+用 --width 缩窄嵌入宽度而不挤扁鱼。
+用 --static 输出静态图片（打印或邮件）。
+用 --json 输出机器可读摘要（徽章 / CI 管道）。
+
+JSON 输出示例:
+  {
+    "login": "webywz",
+    "name": null,
+    "totalContributions": 1234,
+    "source": "graphql",
+    "range": { "from": "2025-10-31", "to": "2026-10-30" },
+    "streak": 42,
+    "activeDays": 256,
+    "recent14": 89,
+    "fishCount": 12,
+    "plantCount": 11,
+    "bubbleCount": 15
+  }
+`;
+  }
+  return `contrib-aquarium ${version}
+Turn a GitHub year into a living SVG aquarium.
 
 Usage:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
@@ -72,43 +132,38 @@ Usage:
                             [--static | --no-animate]
                             [--json]
                             [--token <gh_token>]
+                            [--locale <en|zh>]
                             [--quiet]
-  contrib-aquarium --list-themes [--json]
+  contrib-aquarium --list-themes [--json] [--locale <en|zh>]
 
 Options:
-  --user         GitHub login (required) | GitHub 用户名（必填）
-  --out          Output path (default: aquarium.svg) | 输出路径（默认 aquarium.svg）
-  --source       auto (default), graphql, events, or mock | 数据源
-  --theme        Color theme: deep (default), reef, midnight, lagoon, ember, or fog | 配色主题
-  --width        SVG display width in px (default: 860); viewBox stays 860×300 | SVG 显示宽度
-  --height       SVG display height in px (default: proportional to --width) | SVG 显示高度
-  --static       Strip animations; fish and plants rest (same as --no-animate) | 移除动画
-  --no-animate   Strip animations; fish and plants rest (same as --static) | 移除动画
+  --user         GitHub login (required)
+  --out          Output path (default: aquarium.svg)
+  --source       Data source: auto (default), graphql, events, or mock
+  --theme        Color theme: deep (default), reef, midnight, lagoon, ember, or fog
+  --width        SVG display width in px (default: 860); viewBox stays 860×300
+  --height       SVG display height in px (default: proportional to --width)
+  --static       Strip animations; fish and plants rest (same as --no-animate)
+  --no-animate   Strip animations; fish and plants rest (same as --static)
   --json         Print JSON summary to stdout instead of SVG (--out is ignored)
-                 打印 JSON 摘要到标准输出而非 SVG（忽略 --out）
-  --token        GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN | GitHub token
-  --quiet        Suppress the success summary line | 禁用成功摘要行
+  --token        GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
+  --locale       Interface language: en (default) or zh
+  --quiet        Suppress the success summary line
   --list-themes  Print available theme names (one per line; with --json: JSON array)
-                 打印可用主题名称（每行一个；加 --json 则输出 JSON 数组）
-  --help         Show this message | 显示帮助
-  --version      Print version | 打印版本
+  --help         Show this message
+  --version      Print version
 
-Data sources (auto) | 数据源（自动回退）:
-  1. GraphQL contributionsCollection   requires a token, full last-year calendar | 需 token，完整年历
-  2. Public events feed                recent activity, no token required | 公开事件流，无需 token
-  3. Deterministic mock from username  always works; offline demos | 确定性演示，总能用
+Data sources (auto fallback):
+  1. GraphQL contributionsCollection   requires a token, full last-year calendar
+  2. Public events feed                recent activity, no token required
+  3. Deterministic mock from username  always works; offline demos
 
 The SVG is self-contained (CSS + SMIL). Drop it in a README as an image.
 Use --width for narrower README embeds without squashing the fish.
 Use --static when you need a still image (e.g. for printing or email).
 Use --json for badge/CI pipelines.
 
-SVG 自包含（CSS + SMIL），可作为图片直接嵌入 README。
-用 --width 缩窄嵌入宽度而不挤扁鱼。
-用 --static 输出静态图片（打印或邮件）。
-用 --json 输出机器可读摘要（徽章 / CI 管道）。
-
-Example JSON output | JSON 输出示例:
+Example JSON output:
   {
     "login": "webywz",
     "name": null,
@@ -134,27 +189,50 @@ function parseSource(value: string | boolean | undefined): LoadSource {
   if (value === "auto" || value === "graphql" || value === "events" || value === "mock") {
     return value;
   }
-  throw new Error(`Unknown --source "${value}". Use auto, graphql, events, or mock.`);
+  throw new Error(`__UNKNOWN_SOURCE__:${value}`);
 }
 
 function parsePositiveNumber(flag: string, value: string | boolean | undefined): number | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== "string") {
-    throw new Error(`Missing value for --${flag}`);
+    throw new Error(`__MISSING_VALUE__:${flag}`);
   }
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) {
-    throw new Error(`Invalid --${flag} "${value}". Use a positive number.`);
+    throw new Error(`__INVALID_NUMBER__:${flag}:${value}`);
   }
   return n;
 }
 
+function extractLocale(argv: string[]): Locale {
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--locale" && i + 1 < argv.length) {
+      const value = argv[i + 1];
+      if (value === "en" || value === "zh") {
+        return value;
+      }
+    }
+  }
+  return "en";
+}
+
 async function run(argv: string[]): Promise<number> {
+  const locale = extractLocale(argv);
   let parsed: { command: string | undefined; flags: FlagMap };
   try {
     parsed = parseArgs(argv);
+    parseLocale(parsed.flags.locale);
   } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.startsWith("__UNEXPECTED_ARG__:")) {
+      console.error(getErrorMessage(locale, "unexpectedArg", msg.slice(19)));
+    } else if (msg.startsWith("__UNKNOWN_OPTION__:")) {
+      console.error(getErrorMessage(locale, "unknownOption", msg.slice(19)));
+    } else if (msg.startsWith("__MISSING_VALUE__:")) {
+      console.error(getErrorMessage(locale, "missingValue", msg.slice(18)));
+    } else {
+      console.error(msg);
+    }
     return USAGE_EXIT;
   }
 
@@ -174,17 +252,17 @@ async function run(argv: string[]): Promise<number> {
     return 0;
   }
   if (flags.help || !command) {
-    console.log(help());
+    console.log(help(locale));
     return 0;
   }
   if (command !== "generate") {
-    console.error(`Unknown command "${command}". Try --help.`);
+    console.error(getErrorMessage(locale, "unknownCommand", command));
     return USAGE_EXIT;
   }
 
   const user = asString(flags.user);
   if (!user) {
-    console.error("Missing --user <login>");
+    console.error(getErrorMessage(locale, "missingUser"));
     return USAGE_EXIT;
   }
 
@@ -244,7 +322,19 @@ async function run(argv: string[]): Promise<number> {
     }
     return 0;
   } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.startsWith("__UNKNOWN_SOURCE__:")) {
+      console.error(getErrorMessage(locale, "unknownSource", msg.slice(19)));
+    } else if (msg.startsWith("__INVALID_NUMBER__:")) {
+      const parts = msg.slice(19).split(":");
+      const flag = parts[0];
+      const value = parts[1] || "";
+      console.error(
+        getErrorMessage(locale, flag === "width" ? "invalidWidth" : "invalidHeight", value),
+      );
+    } else {
+      console.error(msg);
+    }
     return 1;
   }
 }
