@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { mockActivity } from "../src/activity.js";
 import { mapAquarium, mapFishCount } from "../src/mapping.js";
-import { countSvgElements, renderAquarium, SVG_HEIGHT, SVG_WIDTH } from "../src/render.js";
+import {
+  countSvgElements,
+  presentationSize,
+  renderAquarium,
+  SVG_HEIGHT,
+  SVG_WIDTH,
+} from "../src/render.js";
 import type { Activity } from "../src/types.js";
 
 const FROZEN = new Date("2026-10-29T00:00:00Z");
@@ -25,6 +31,8 @@ describe("renderAquarium", () => {
     assert.match(svg, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
     assert.match(svg, /<svg /);
     assert.match(svg, new RegExp(`viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}"`));
+    assert.match(svg, new RegExp(`width="${SVG_WIDTH}"`));
+    assert.match(svg, new RegExp(`height="${SVG_HEIGHT}"`));
     assert.match(svg, /<style>/);
     assert.match(svg, /@keyframes swim/);
     assert.doesNotMatch(svg, /<script/i);
@@ -71,5 +79,23 @@ describe("renderAquarium", () => {
     assert.match(svg, /data-source="graphql"/);
     assert.match(svg, /data-total="74"/);
     assert.doesNotMatch(svg, /demo pattern from username/);
+  });
+
+  it("scales presentation size with custom width while keeping viewBox", () => {
+    const activity = mockActivity("webywz", FROZEN);
+    const svg = renderAquarium(activity, "deep", 720);
+    const { width, height } = presentationSize(720);
+    assert.equal(width, 720);
+    assert.equal(height, Math.round((720 * SVG_HEIGHT) / SVG_WIDTH));
+    assert.match(svg, new RegExp(`width="${width}"`));
+    assert.match(svg, new RegExp(`height="${height}"`));
+    assert.match(svg, new RegExp(`viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}"`));
+  });
+
+  it("keeps themes when a custom width is set", () => {
+    const activity = mockActivity("webywz", FROZEN);
+    const svg = renderAquarium(activity, "reef", 720);
+    assert.match(svg, /data-theme="reef"/);
+    assert.match(svg, /width="720"/);
   });
 });

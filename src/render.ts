@@ -282,9 +282,21 @@ function surface(): string {
     <path class="shimmer" fill="none" stroke="rgba(186,232,228,0.45)" stroke-width="1.1" d="M24,22 Q140,14 250,24 T480,20 T836,26"/>`;
 }
 
-export function renderAquarium(activity: Activity, themeName: ThemeName = "deep"): string {
+/** Presentation size for README embeds. viewBox stays at SVG_WIDTH × SVG_HEIGHT. */
+export function presentationSize(width: number = SVG_WIDTH): { width: number; height: number } {
+  const w = width;
+  const h = Math.round((w * SVG_HEIGHT) / SVG_WIDTH);
+  return { width: w, height: h };
+}
+
+export function renderAquarium(
+  activity: Activity,
+  themeName: ThemeName = "deep",
+  width?: number,
+): string {
   const theme = getTheme(themeName);
   const model = mapAquarium(activity, themeName);
+  const size = presentationSize(width ?? SVG_WIDTH);
   const label = escapeXml(
     `GitHub contribution aquarium for ${activity.login} — ${activity.totalContributions} contributions`,
   );
@@ -299,7 +311,7 @@ export function renderAquarium(activity: Activity, themeName: ThemeName = "deep"
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}" data-theme="${theme.name}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${size.width}" height="${size.height}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}" data-theme="${theme.name}">
   <title>${label}</title>
   ${defs(theme)}
   ${styles(model)}

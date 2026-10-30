@@ -31,7 +31,11 @@ export type LoadOptions = {
   fetchImpl?: typeof fetch;
 };
 
-export type GenerateOptions = LoadOptions & { theme?: import("./theme.js").ThemeName };
+export type GenerateOptions = LoadOptions & {
+  theme?: import("./theme.js").ThemeName;
+  /** Presentation SVG width in px; height scales with aspect ratio. Default: 860. */
+  width?: number;
+};
 
 export type GenerateResult = {
   svg: string;

@@ -46,6 +46,7 @@ Usage:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
                             [--source auto|graphql|events|mock]
                             [--theme deep|reef|midnight]
+                            [--width <px>]
                             [--token <gh_token>]
 
 Options:
@@ -53,6 +54,7 @@ Options:
   --out       Output path (default: aquarium.svg)
   --source    auto (default), graphql, events, or mock
   --theme     Color theme: deep (default), reef, or midnight
+  --width     Presentation width in px (default: 860); height scales
   --token     GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
   --help      Show this message
   --version   Print version
@@ -76,6 +78,20 @@ function parseSource(value: string | boolean | undefined): LoadSource {
     return value;
   }
   throw new Error(`Unknown --source "${value}". Use auto, graphql, events, or mock.`);
+}
+
+/** Positive integer presentation width; undefined keeps the default SVG size. */
+function parseWidth(value: string | boolean | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new Error("Missing --width <px>. Use a positive integer (pixels).");
+  }
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new Error(
+      `Invalid --width "${value}". Use a positive integer (pixels), e.g. --width 720.`,
+    );
+  }
+  return Number(value);
 }
 
 async function run(argv: string[]): Promise<number> {
@@ -110,11 +126,13 @@ async function run(argv: string[]): Promise<number> {
   const out = resolve(asString(flags.out) ?? "aquarium.svg");
   try {
     const theme = parseTheme(asString(flags.theme));
+    const width = parseWidth(flags.width);
     const { svg, activity } = await generateAquarium({
       user,
       token: asString(flags.token),
       source: parseSource(flags.source),
       theme,
+      width,
     });
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, svg, "utf8");

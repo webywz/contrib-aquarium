@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.1 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.2 · Node.js 18.18+
 
 ---
 
@@ -36,7 +36,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 | Mapping | Year total → fish count; streaks → kelp; last 14 days → bubbles | 全年总数 → 鱼数；连续打卡 → 海藻；近两周 → 气泡 |
 | Sources | GraphQL calendar, public events, or deterministic mock | GraphQL 日历 / 公开 Events / 确定性 mock |
 | Themes | `deep` · `reef` · `midnight` (palette only) | 三种配色，布局与映射不变 |
-| Embed | Commit SVG, or refresh daily via composite Action | 提交 SVG，或用 Action 每日重画 |
+| Embed | Commit SVG, or refresh daily via Action; `--width` for sizing | 提交 SVG / Action 每日重画；`--width` 控制嵌入尺寸 |
 | API | CLI + TypeScript library | CLI + 库 |
 
 ---
@@ -81,6 +81,9 @@ npx contrib-aquarium generate --user webywz --source mock --out aquarium.svg
 
 # theme
 npx contrib-aquarium generate --user webywz --theme reef --out aquarium.svg
+
+# presentation width for smaller embeds (default 860; height scales)
+npx contrib-aquarium generate --user webywz --width 720 --out aquarium.svg
 ```
 
 In a README:
@@ -175,6 +178,7 @@ GitHub 的 Camo 代理可能短暂缓存缩略图；仓库里的文件是新的�
 contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--source auto|graphql|events|mock]
                           [--theme deep|reef|midnight]
+                          [--width <px>]
                           [--token <gh_token>]
 ```
 
@@ -184,7 +188,12 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--out` | `aquarium.svg` | Output path (dirs created) |
 | `--source` | `auto` | See data sources |
 | `--theme` | `deep` | `deep` · `reef` · `midnight` |
+| `--width` | `860` | Presentation width (px); height scales |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
+
+`--width` only changes the SVG `width` / `height` attributes for embeds. The `viewBox` and tank layout stay the same — themes still apply.
+
+`--width` 只改展示宽高，方便 README 缩略；`viewBox` 与缸内布局不变，主题照常生效。
 
 ```bash
 npm run generate -- --user webywz --out docs/aquarium.svg

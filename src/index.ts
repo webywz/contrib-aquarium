@@ -1,6 +1,6 @@
 export { generateAquarium } from "./generate.js";
 export { loadActivity, mockActivity, fetchGraphqlActivity, fetchEventsActivity, ActivityError } from "./activity.js";
-export { renderAquarium, SVG_WIDTH, SVG_HEIGHT, countSvgElements } from "./render.js";
+export { renderAquarium, presentationSize, SVG_WIDTH, SVG_HEIGHT, countSvgElements } from "./render.js";
 export {
   mapAquarium,
   mapFishCount,

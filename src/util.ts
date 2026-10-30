@@ -97,5 +97,5 @@ export function enumerateUtcDays(from: Date, to: Date): Date[] {
 }
 
 export function readPackageVersion(): string {
-  return "0.1.0";
+  return "0.1.2";
 }

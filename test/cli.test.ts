@@ -96,4 +96,52 @@ describe("CLI", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+  it("documents --width in help", async () => {
+    const result = await runCli(["--help"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /--width/);
+  });
+
+  it("writes a custom-width aquarium", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-width-"));
+    const out = join(dir, "wide.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "cli-width",
+        "--source",
+        "mock",
+        "--width",
+        "720",
+        "--theme",
+        "midnight",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /width="720"/);
+      assert.match(svg, /height="251"/);
+      assert.match(svg, /viewBox="0 0 860 300"/);
+      assert.match(svg, /data-theme="midnight"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects missing, non-integer, and non-positive --width", async () => {
+    for (const args of [
+      ["generate", "--user", "x", "--source", "mock", "--width"],
+      ["generate", "--user", "x", "--source", "mock", "--width", "abc"],
+      ["generate", "--user", "x", "--source", "mock", "--width", "0"],
+      ["generate", "--user", "x", "--source", "mock", "--width", "-12"],
+      ["generate", "--user", "x", "--source", "mock", "--width", "12.5"],
+    ]) {
+      const result = await runCli(args);
+      assert.equal(result.code, 1, args.join(" "));
+      assert.match(result.stderr, /--width/);
+    }
+  });
+
 });
