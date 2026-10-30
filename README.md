@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.5 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.6 · Node.js 18.18+
 
 ---
 
@@ -195,6 +195,46 @@ Default behavior (without `--static`) includes full animations. The `prefers-red
 
 ---
 
+## JSON output · JSON 输出
+
+`--json` prints a machine-readable contribution summary to stdout instead of generating SVG. Useful for badge/CI pipelines that need stats without rendering.
+
+`--json` 将机器可读的贡献摘要打印到标准输出，而不生成 SVG。适用于需要统计数据而无需渲染的徽章 / CI 管道。
+
+```bash
+# Get JSON summary · 获取 JSON 摘要
+npx contrib-aquarium generate --user webywz --json
+
+# Output includes · 输出包含:
+# - login, name, totalContributions, source, range
+# - streak (current consecutive days), activeDays (days with >0 contributions)
+# - recent14 (last 14 days total), fishCount, plantCount, bubbleCount
+```
+
+Example output · 输出示例:
+
+```json
+{
+  "login": "webywz",
+  "name": null,
+  "totalContributions": 1234,
+  "source": "graphql",
+  "range": { "from": "2025-10-31", "to": "2026-10-30" },
+  "streak": 42,
+  "activeDays": 256,
+  "recent14": 89,
+  "fishCount": 12,
+  "plantCount": 11,
+  "bubbleCount": 15
+}
+```
+
+When `--json` is set, `--out` is ignored (nothing is written to disk). `--theme`, `--width`, `--height`, and `--static` have no effect in JSON mode.
+
+设置 `--json` 时，`--out` 被忽略（不写入磁盘）。`--theme`、`--width`、`--height` 和 `--static` 在 JSON 模式下无效。
+
+---
+
 ## Embed daily · 每日嵌入
 
 Copy [`examples/github-action.yml`](examples/github-action.yml) into your **profile** repo (`USER/USER`) as `.github/workflows/aquarium.yml`. It runs on a daily cron + `workflow_dispatch`, uses this repo as a composite action, and commits `aquarium.svg` when the tank changed.
@@ -226,6 +266,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--theme deep|reef|midnight|lagoon|ember|fog]
                           [--width <px>] [--height <px>]
                           [--static | --no-animate]
+                          [--json]
                           [--token <gh_token>]
                           [--quiet]
 ```
@@ -240,6 +281,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--height` | proportional · 等比 | Display height · 展示高 |
 | `--static` | off | Strip animations; fish rest · 移除动画 |
 | `--no-animate` | off | Same as `--static` · 等同 `--static` |
+| `--json` | off | Print JSON summary to stdout · 打印 JSON 摘要到标准输出 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
 
