@@ -11,6 +11,7 @@ import {
   formatThemesStepSummary,
   type GenerateSummary,
 } from "./github.js";
+import { formatHtml } from "./html.js";
 import { resolveSvgDisplaySize } from "./render.js";
 import { parseTheme, THEME_NAMES } from "./theme.js";
 import { readPackageVersion } from "./util.js";
@@ -43,6 +44,22 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
     }
     if (arg === "-q" || arg === "--quiet") {
       flags.quiet = true;
+      continue;
+    }
+    if (arg === "--html" || arg.startsWith("--html=")) {
+      // Optional `--html [path]`: true = stdout, string = write that path.
+      if (arg.startsWith("--html=")) {
+        const inline = arg.slice("--html=".length);
+        flags.html = inline === "" ? true : inline;
+      } else {
+        const next = args[i + 1];
+        if (next && !next.startsWith("-")) {
+          flags.html = next;
+          i += 1;
+        } else {
+          flags.html = true;
+        }
+      }
       continue;
     }
     if (!arg.startsWith("-")) {
@@ -82,6 +99,7 @@ function help(locale: Locale): string {
                             [--width <px>] [--height <px>]
                             [--static | --no-animate]
                             [--json]
+                            [--html [path]]
                             [--token <gh_token>]
                             [--locale <en|zh>]
                             [--quiet]
@@ -98,6 +116,7 @@ function help(locale: Locale): string {
   --static       移除动画，鱼和植物静止（同 --no-animate）
   --no-animate   移除动画，鱼和植物静止（同 --static）
   --json         打印 JSON 摘要到标准输出而非 SVG；与 --out 一起使用时写入文件
+  --html [path]  自包含 HTML 报告（标准输出，或写入路径；离线，无 CDN）
   --token        GitHub token；回退到 GITHUB_TOKEN / GH_TOKEN
   --locale       界面语言: en（默认）或 zh
   --quiet        禁用成功摘要行
@@ -115,8 +134,10 @@ SVG 自包含（CSS + SMIL），可作为图片直接嵌入 README。
 用 --width 缩窄嵌入宽度而不挤扁鱼。
 用 --static 输出静态图片（打印或邮件）。
 用 --json 输出机器可读摘要（徽章 / CI 管道）。
+用 --html 输出自包含离线报告（统计 / 主题 / 用户 / SVG 路径，内嵌鱼缸）。
+--html 与 --json 不能同时使用，请选择一种主输出。
 用 --github 在 Actions 日志里打注解；若设置了 GITHUB_STEP_SUMMARY 则追加 Job Summary。
-与 --json 合用时注解写到 stderr，stdout 仍是纯 JSON。--quiet 仍隐藏人类摘要行，但注解与 Job Summary 照常输出。
+与 --json / --html 合用时注解写到 stderr，stdout 仍是纯 JSON 或 HTML。--quiet 仍隐藏人类摘要行，但注解与 Job Summary 照常输出。
 
 JSON 输出示例:
   {
@@ -144,6 +165,7 @@ Usage:
                             [--width <px>] [--height <px>]
                             [--static | --no-animate]
                             [--json]
+                            [--html [path]]
                             [--token <gh_token>]
                             [--locale <en|zh>]
                             [--quiet]
@@ -160,6 +182,7 @@ Options:
   --static       Strip animations; fish and plants rest (same as --no-animate)
   --no-animate   Strip animations; fish and plants rest (same as --static)
   --json         Print JSON summary to stdout instead of SVG; writes to file with --out
+  --html [path]  Self-contained HTML report (stdout, or write to path; offline, no CDN)
   --token        GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
   --locale       Interface language: en (default) or zh
   --quiet        Suppress the success summary line
@@ -177,8 +200,10 @@ The SVG is self-contained (CSS + SMIL). Drop it in a README as an image.
 Use --width for narrower README embeds without squashing the fish.
 Use --static when you need a still image (e.g. for printing or email).
 Use --json for badge/CI pipelines.
+Use --html for a self-contained offline report (stats / theme / user / SVG path, inlined tank).
+--html and --json cannot share stdout; pick one primary export.
 Use --github for Actions log annotations; when GITHUB_STEP_SUMMARY is set, append a job summary.
-With --json, annotations go to stderr so stdout stays parseable JSON. --quiet still hides the
+With --json / --html, annotations go to stderr so stdout stays parseable. --quiet still hides the
 pretty success line; annotations and the job summary still emit.
 
 Example JSON output:
@@ -332,6 +357,11 @@ async function run(argv: string[]): Promise<number> {
     return USAGE_EXIT;
   }
 
+  if (flags.html && flags.json) {
+    reportError(getErrorMessage(locale, "htmlJsonConflict"), github);
+    return USAGE_EXIT;
+  }
+
   const user = asString(flags.user);
   if (!user) {
     reportError(getErrorMessage(locale, "missingUser"), github);
@@ -342,6 +372,8 @@ async function run(argv: string[]): Promise<number> {
   const quiet = Boolean(flags.quiet);
   const static_mode = Boolean(flags.static || flags["no-animate"]);
   const json_mode = Boolean(flags.json);
+  const htmlOnStdout = flags.html === true;
+  const htmlPath = typeof flags.html === "string" ? resolve(flags.html) : undefined;
 
   try {
     const theme = parseTheme(asString(flags.theme));
@@ -405,12 +437,49 @@ async function run(argv: string[]): Promise<number> {
 
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, svg, "utf8");
+    const size = resolveSvgDisplaySize({ width, height });
     if (!quiet) {
-      const size = resolveSvgDisplaySize({ width, height });
       console.error(
         `${activity.login} · source=${activity.source} · theme=${theme} · ${size.width}×${size.height} · ${out}`,
       );
     }
+
+    if (htmlOnStdout || htmlPath) {
+      const html = formatHtml(
+        {
+          login: stats.login,
+          name: stats.name,
+          totalContributions: stats.totalContributions,
+          source: stats.source,
+          range: stats.range,
+          streak: stats.streak,
+          activeDays: stats.activeDays,
+          recent14: stats.recent14,
+          fishCount: stats.fishCount,
+          plantCount: stats.plantCount,
+          bubbleCount: stats.bubbleCount,
+          theme,
+          outPath: out,
+          width: size.width,
+          height: size.height,
+          staticMode: static_mode,
+          version: readPackageVersion(),
+          svg,
+        },
+        { locale },
+      );
+      const payload = html.endsWith("\n") ? html : `${html}\n`;
+      if (htmlPath) {
+        await mkdir(dirname(htmlPath), { recursive: true });
+        await writeFile(htmlPath, payload, "utf8");
+        if (!quiet) {
+          console.error(`wrote html report to ${htmlPath}`);
+        }
+      } else {
+        process.stdout.write(payload);
+      }
+    }
+
     emitNotice(formatGenerateNotice(summary), github);
     tryAppendStepSummary(github, formatGenerateStepSummary(summary));
     return 0;

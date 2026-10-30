@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.10 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.11 · Node.js 18.18+
 
 ---
 
@@ -39,6 +39,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 | Embed | Commit SVG, or refresh daily via composite Action | 提交 SVG，或用 Action 每日重画 |
 | API | CLI + TypeScript library | CLI + 库 |
 | Actions | `--github` workflow commands (`::notice::` / `::error::`) + job summary | `--github` 输出 Actions 注解与 Job Summary |
+| HTML | `--html [path]` self-contained offline report (no CDN) | `--html [path]` 自包含离线报告（无 CDN） |
 
 ---
 
@@ -241,6 +242,44 @@ When `--json` is set without `--out`, JSON is printed to stdout. With `--out`, t
 
 设置 `--json` 时，不带 `--out` 则输出到标准输出；带 `--out` 则写入指定文件且标准输出保持静默（不写入 SVG）。`--theme`、`--width`、`--height` 和 `--static` 在 JSON 模式下无效。
 
+`--json` and `--html` are mutually exclusive.
+
+`--json` 与 `--html` 互斥，不能同时使用。
+
+---
+
+## HTML report · HTML 报告
+
+`--html` writes a self-contained offline HTML report (inline CSS + inlined SVG tank). No CDN, no external fonts or scripts — open it via `file://`.
+
+`--html` 写出一份自包含离线 HTML 报告（内联 CSS + 内嵌 SVG 鱼缸）。无 CDN、无外部字体或脚本，可用 `file://` 打开。
+
+| Form · 写法 | Result · 结果 |
+| --- | --- |
+| `--html` | Print HTML to stdout · 打印到标准输出 |
+| `--html report.html` | Write HTML to that file · 写入指定文件 |
+
+SVG still goes to `--out` (default `aquarium.svg`). `--quiet` still hides the pretty success line. `--github` annotations stay on stderr so stdout remains parseable HTML. `--locale` localizes report labels (JSON keys stay English).
+
+SVG 仍写入 `--out`（默认 `aquarium.svg`）。`--quiet` 仍隐藏人类成功摘要行。`--github` 注解写到 stderr，stdout 保持可解析 HTML。`--locale` 本地化报告标签（JSON 键仍是英文）。
+
+```bash
+# HTML on stdout · HTML 到标准输出
+npx contrib-aquarium generate --user webywz --source mock --html
+
+# HTML to a file · HTML 写入文件
+npx contrib-aquarium generate --user webywz --source mock --html report.html
+
+# Combined with existing habits · 与现有习惯合用
+npx contrib-aquarium generate --user webywz --source mock --out tank.svg --html report.html --quiet
+npx contrib-aquarium generate --user webywz --source mock --html --github
+npx contrib-aquarium generate --user webywz --source mock --html --locale zh
+```
+
+`--html` cannot be combined with `--json` (choose one primary export).
+
+`--html` 不能与 `--json` 同时使用（请选择一种主输出）。
+
 ---
 
 ## GitHub Actions · `--github`
@@ -249,9 +288,9 @@ When `--json` is set without `--out`, JSON is printed to stdout. With `--out`, t
 
 `--github` 输出 GitHub Actions 工作流命令：失败 / 用法错误用 `::error::`，成功 generate 打一条 `::notice::`（用户、主题、输出路径或 JSON 模式、鱼数 / 贡献数）。成功的 `--list-themes` 同样打 notice。若设置了 `GITHUB_STEP_SUMMARY`，追加一段 Markdown Job Summary。不加 `--github` 时行为不变：无注解、不写 Job Summary。
 
-Combined with `--json`, stdout stays machine-parseable JSON; annotations go to stderr. Combined with `--quiet`, the pretty human success line is still suppressed, but annotations and the job summary still emit.
+Combined with `--json` or `--html` on stdout, stdout stays machine-parseable; annotations go to stderr. Combined with `--quiet`, the pretty human success line is still suppressed, but annotations and the job summary still emit.
 
-与 `--json` 合用时，stdout 仍是可解析 JSON，注解写到 stderr。与 `--quiet` 合用时仍隐藏人类成功摘要行，但注解和 Job Summary 照常输出。
+与 `--json` 或 stdout 上的 `--html` 合用时，stdout 仍可解析，注解写到 stderr。与 `--quiet` 合用时仍隐藏人类成功摘要行，但注解和 Job Summary 照常输出。
 
 ```bash
 # Actions annotations on stderr · 在 Actions 日志里打注解
@@ -319,6 +358,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--width <px>] [--height <px>]
                           [--static | --no-animate]
                           [--json]
+                          [--html [path]]
                           [--token <gh_token>]
                           [--locale <en|zh>]
                           [--quiet]
@@ -338,6 +378,7 @@ contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 | `--static` | off | Strip animations; fish rest · 移除动画 |
 | `--no-animate` | off | Same as `--static` · 等同 `--static` |
 | `--json` | off | Print JSON to stdout; write to file with --out · 打印 JSON 到标准输出或与 --out 写入文件 |
+| `--html` | off | Self-contained HTML report to stdout, or `--html <path>` to a file · 自包含 HTML 到标准输出或写入路径 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 | `--locale` | `en` | Interface language: `en` or `zh` · 界面语言 |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
