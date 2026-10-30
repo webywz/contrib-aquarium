@@ -65,4 +65,35 @@ describe("CLI", () => {
     assert.equal(result.code, 1);
     assert.match(result.stderr, /Missing --user/);
   });
+
+  it("documents --theme in help", async () => {
+    const result = await runCli(["--help"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /--theme/);
+    assert.match(result.stdout, /reef/);
+  });
+
+  it("writes a reef-themed aquarium", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-theme-"));
+    const out = join(dir, "reef.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "cli-theme",
+        "--source",
+        "mock",
+        "--theme",
+        "reef",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stderr, /theme=reef/);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-theme="reef"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

@@ -24,9 +24,9 @@ The tank is pure SVG (CSS + SMIL). No JavaScript in the embed, so GitHub READMEs
 
 鱼缸是自包含 SVG（CSS + SMIL），嵌入时不需要 JS，可当普通图片用。暗水色 + 铜框，在 GitHub 浅色 / 深色主题下都站得住。
 
-> v0.1.0 is on npm. `npx contrib-aquarium` is the published entry point.
+> v0.1.1 adds `--theme` (`deep` / `reef` / `midnight`). `npx contrib-aquarium` remains the entry point.
 >
-> v0.1.0 已发布到 npm。入口是 `npx contrib-aquarium`。
+> v0.1.1 新增 `--theme`（`deep` / `reef` / `midnight`）。入口仍是 `npx contrib-aquarium`。
 
 ---
 
@@ -165,11 +165,30 @@ GitHub 的 Camo 代理可能短暂缓存图片；仓库里的文件是新的，R
 
 ---
 
+## Themes · 主题
+
+`--theme` picks a color palette without changing layout or activity mapping:
+
+| Name | Feel |
+| --- | --- |
+| `deep` (default) | Classic dark teal tank |
+| `reef` | Warmer tropical water, brighter fish |
+| `midnight` | Violet night water, neon accents |
+
+```bash
+npx contrib-aquarium generate --user YOUR_LOGIN --theme reef --out aquarium.svg
+```
+
+`--theme` 只换配色，不改布局与贡献映射：`deep` 默认深青、`reef` 暖色珊瑚、`midnight` 午夜紫。
+
+---
+
 ## CLI
 
 ```
 contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--source auto|graphql|events|mock]
+                          [--theme deep|reef|midnight]
                           [--token <gh_token>]
 ```
 
@@ -178,6 +197,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--user` | required | GitHub login |
 | `--out` | `aquarium.svg` | Output path (directories are created) |
 | `--source` | `auto` | See data sources above |
+| `--theme` | `deep` | Color palette: `deep`, `reef`, or `midnight` |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 
 ```bash
@@ -197,6 +217,7 @@ import { generateAquarium, renderAquarium, mockActivity } from "contrib-aquarium
 const { svg, activity } = await generateAquarium({
   user: "webywz",
   source: "auto",
+  theme: "reef",
 });
 
 // or draw a fixture

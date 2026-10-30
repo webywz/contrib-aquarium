@@ -23,6 +23,7 @@ jobs:
         with:
           user: ${{ github.repository_owner }}
           out: aquarium.svg
+          # theme: reef   # optional: deep | reef | midnight
       - name: Commit aquarium.svg
         run: |
           git config user.name "github-actions[bot]"

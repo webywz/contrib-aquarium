@@ -22,3 +22,6 @@ export type {
   LoadSource,
 } from "./types.js";
 export { FISH_MIN, FISH_MAX, PLANT_MIN, PLANT_MAX, BUBBLE_MIN, BUBBLE_MAX } from "./types.js";
+export { getTheme, parseTheme, THEME_NAMES } from "./theme.js";
+export type { Theme, ThemeName } from "./theme.js";
+

@@ -1,4 +1,5 @@
 import { mapAquarium } from "./mapping.js";
+import { getTheme, type Theme, type ThemeName } from "./theme.js";
 import type {
   Activity,
   AquariumModel,
@@ -11,8 +12,6 @@ import { escapeXml, formatRange } from "./util.js";
 
 export const SVG_WIDTH = 860;
 export const SVG_HEIGHT = 300;
-
-const KELP = ["#1a4f40", "#227056", "#163e34", "#2a7a5c"] as const;
 
 function fmt(n: number, digits = 2): string {
   return n.toFixed(digits).replace(/\.?0+$/, "");
@@ -92,8 +91,8 @@ function bladePath(x: number, height: number, lean: number, width: number): stri
     Q ${fmt(x + lean * 0.55 + width, 1)} ${fmt(268 - height * 0.62, 1)} ${fmt(x + width * 0.35, 1)} 268 Z`;
 }
 
-function drawPlant(plant: PlantModel): string {
-  const color = KELP[plant.palette % KELP.length];
+function drawPlant(plant: PlantModel, theme: Theme): string {
+  const color = theme.kelp[plant.palette % theme.kelp.length];
   const blades: string[] = [];
   for (let i = 0; i < plant.blades; i++) {
     const lean = (i - (plant.blades - 1) / 2) * 16 + (i % 2 === 0 ? 6 : -4);
@@ -113,17 +112,17 @@ function drawBubble(bubble: BubbleModel): string {
   </g>`;
 }
 
-function drawReef(columns: ReefColumn[]): string {
+function drawReef(columns: ReefColumn[], theme: Theme): string {
   return columns
     .map((col) => {
       const cx = col.x + col.width / 2;
       const pebbles = [
-        `<ellipse cx="${fmt(cx, 2)}" cy="264.5" rx="${fmt(Math.max(2.2, col.width * 0.72), 2)}" ry="${fmt(Math.max(2, col.height * 0.34), 2)}" fill="#6a5844"/>`,
-        `<ellipse cx="${fmt(cx + col.width * 0.18, 2)}" cy="${fmt(263.2 - col.height * 0.22, 2)}" rx="${fmt(Math.max(1.4, col.width * 0.4), 2)}" ry="${fmt(Math.max(1.5, col.height * 0.28), 2)}" fill="#8d7860"/>`,
+        `<ellipse cx="${fmt(cx, 2)}" cy="264.5" rx="${fmt(Math.max(2.2, col.width * 0.72), 2)}" ry="${fmt(Math.max(2, col.height * 0.34), 2)}" fill="${theme.reef[0]}"/>`,
+        `<ellipse cx="${fmt(cx + col.width * 0.18, 2)}" cy="${fmt(263.2 - col.height * 0.22, 2)}" rx="${fmt(Math.max(1.4, col.width * 0.4), 2)}" ry="${fmt(Math.max(1.5, col.height * 0.28), 2)}" fill="${theme.reef[1]}"/>`,
       ];
       if (col.height > 12) {
         pebbles.push(
-          `<ellipse cx="${fmt(cx - col.width * 0.12, 2)}" cy="${fmt(261.5 - col.height * 0.42, 2)}" rx="${fmt(col.width * 0.28, 2)}" ry="${fmt(col.height * 0.22, 2)}" fill="#a89070"/>`,
+          `<ellipse cx="${fmt(cx - col.width * 0.12, 2)}" cy="${fmt(261.5 - col.height * 0.42, 2)}" rx="${fmt(col.width * 0.28, 2)}" ry="${fmt(col.height * 0.22, 2)}" fill="${theme.reef[2]}"/>`,
         );
       }
       return `<g opacity="${fmt(col.opacity, 2)}">${pebbles.join("")}</g>`;
@@ -137,7 +136,7 @@ function sourceNote(source: Activity["source"]): string {
   return "demo pattern from username";
 }
 
-function caption(activity: Activity, model: AquariumModel): string {
+function caption(activity: Activity, model: AquariumModel, theme: Theme): string {
   const login = escapeXml(activity.login.toUpperCase());
   const tracking = activity.login.length > 16 ? "0.08em" : "0.22em";
   const total = activity.totalContributions.toLocaleString("en-US");
@@ -148,38 +147,40 @@ function caption(activity: Activity, model: AquariumModel): string {
   const sourceLabel =
     activity.source === "graphql"
       ? ""
-      : `<text x="828" y="32" fill="rgba(186,214,208,0.55)" font-size="8" font-family="Georgia, serif" text-anchor="end">${note}</text>`;
+      : `<text x="828" y="32" fill="${theme.caption.note}" font-size="8" font-family="Georgia, serif" text-anchor="end">${note}</text>`;
   return `
-    <text x="32" y="268" fill="#d5e6df" font-size="13" font-family="Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif" letter-spacing="${tracking}">${login}</text>
-    <text x="32" y="282" fill="#9bb8b0" font-size="9.5" font-family="Georgia, 'Iowan Old Style', serif">${total} contributions  ·  ${range}${extras}</text>
+    <text x="32" y="268" fill="${theme.caption.title}" font-size="13" font-family="Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif" letter-spacing="${tracking}">${login}</text>
+    <text x="32" y="282" fill="${theme.caption.meta}" font-size="9.5" font-family="Georgia, 'Iowan Old Style', serif">${total} contributions  ·  ${range}${extras}</text>
     ${sourceLabel}`;
 }
 
-function defs(): string {
+function defs(theme: Theme): string {
+  const [w0, w1, w2] = theme.water;
+  const [s0, s1] = theme.sand;
   return `<defs>
     <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#163e4c"/>
-      <stop offset="38%" stop-color="#0c2c38"/>
-      <stop offset="100%" stop-color="#07141c"/>
+      <stop offset="0%" stop-color="${w0}"/>
+      <stop offset="38%" stop-color="${w1}"/>
+      <stop offset="100%" stop-color="${w2}"/>
     </linearGradient>
     <radialGradient id="glow" cx="46%" cy="8%" r="72%">
-      <stop offset="0%" stop-color="#2a7a86" stop-opacity="0.38"/>
-      <stop offset="42%" stop-color="#123844" stop-opacity="0.12"/>
+      <stop offset="0%" stop-color="${theme.glow.color}" stop-opacity="0.38"/>
+      <stop offset="42%" stop-color="${theme.glow.mid}" stop-opacity="0.12"/>
       <stop offset="100%" stop-color="#061018" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#5a4a36"/>
-      <stop offset="100%" stop-color="#2c241a"/>
+      <stop offset="0%" stop-color="${s0}"/>
+      <stop offset="100%" stop-color="${s1}"/>
     </linearGradient>
     <linearGradient id="film" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#8fd0d4" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#8fd0d4" stop-opacity="0"/>
+      <stop offset="0%" stop-color="${theme.film}" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="${theme.film}" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#d4f0f2" stop-opacity="0.16"/>
-      <stop offset="18%" stop-color="#d4f0f2" stop-opacity="0"/>
-      <stop offset="82%" stop-color="#d4f0f2" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#d4f0f2" stop-opacity="0.12"/>
+      <stop offset="0%" stop-color="${theme.glass}" stop-opacity="0.16"/>
+      <stop offset="18%" stop-color="${theme.glass}" stop-opacity="0"/>
+      <stop offset="82%" stop-color="${theme.glass}" stop-opacity="0"/>
+      <stop offset="100%" stop-color="${theme.glass}" stop-opacity="0.12"/>
     </linearGradient>
     <filter id="soft" x="-8%" y="-8%" width="116%" height="116%">
       <feGaussianBlur stdDeviation="0.4" result="b"/>
@@ -244,27 +245,29 @@ function styles(model: AquariumModel): string {
   </style>`;
 }
 
-function rocks(): string {
+function rocks(theme: Theme): string {
+  const [a, b, c] = theme.rock;
   return `
-    <ellipse cx="118" cy="266" rx="38" ry="11" fill="#2a241c" opacity="0.85"/>
-    <ellipse cx="108" cy="258" rx="22" ry="14" fill="#3a3228"/>
-    <ellipse cx="132" cy="260" rx="14" ry="9" fill="#4a4034"/>
-    <ellipse cx="742" cy="268" rx="46" ry="12" fill="#2a241c" opacity="0.8"/>
-    <ellipse cx="728" cy="258" rx="20" ry="13" fill="#3d352c"/>
-    <ellipse cx="758" cy="261" rx="16" ry="10" fill="#4e4538"/>
-    <ellipse cx="430" cy="270" rx="18" ry="6" fill="#3a3226" opacity="0.7"/>`;
+    <ellipse cx="118" cy="266" rx="38" ry="11" fill="${a}" opacity="0.85"/>
+    <ellipse cx="108" cy="258" rx="22" ry="14" fill="${b}"/>
+    <ellipse cx="132" cy="260" rx="14" ry="9" fill="${c}"/>
+    <ellipse cx="742" cy="268" rx="46" ry="12" fill="${a}" opacity="0.8"/>
+    <ellipse cx="728" cy="258" rx="20" ry="13" fill="${b}"/>
+    <ellipse cx="758" cy="261" rx="16" ry="10" fill="${c}"/>
+    <ellipse cx="430" cy="270" rx="18" ry="6" fill="${b}" opacity="0.7"/>`;
 }
 
-function rays(): string {
+function rays(theme: Theme): string {
+  const [r0, r1, r2] = theme.ray;
   return `
     <g class="ray" opacity="0.14">
-      <polygon points="210,12 268,12 318,268 168,268" fill="#7ec8c4"/>
+      <polygon points="210,12 268,12 318,268 168,268" fill="${r0}"/>
     </g>
     <g class="ray" opacity="0.1" style="animation-delay:-2.4s">
-      <polygon points="470,12 510,12 548,268 430,268" fill="#9ad4c8"/>
+      <polygon points="470,12 510,12 548,268 430,268" fill="${r1}"/>
     </g>
     <g class="ray" opacity="0.08" style="animation-delay:-4.1s">
-      <polygon points="620,12 648,12 700,268 560,268" fill="#7eb8c2"/>
+      <polygon points="620,12 648,12 700,268 560,268" fill="${r2}"/>
     </g>`;
 }
 
@@ -279,37 +282,38 @@ function surface(): string {
     <path class="shimmer" fill="none" stroke="rgba(186,232,228,0.45)" stroke-width="1.1" d="M24,22 Q140,14 250,24 T480,20 T836,26"/>`;
 }
 
-export function renderAquarium(activity: Activity): string {
-  const model = mapAquarium(activity);
+export function renderAquarium(activity: Activity, themeName: ThemeName = "deep"): string {
+  const theme = getTheme(themeName);
+  const model = mapAquarium(activity, themeName);
   const label = escapeXml(
     `GitHub contribution aquarium for ${activity.login} — ${activity.totalContributions} contributions`,
   );
 
   const plantsBack = model.plants
     .filter((_, i) => i % 2 === 0)
-    .map(drawPlant)
+    .map((p) => drawPlant(p, theme))
     .join("");
   const plantsFront = model.plants
     .filter((_, i) => i % 2 === 1)
-    .map(drawPlant)
+    .map((p) => drawPlant(p, theme))
     .join("");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}">
+<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" role="img" aria-label="${label}" data-user="${escapeXml(activity.login)}" data-source="${activity.source}" data-total="${activity.totalContributions}" data-theme="${theme.name}">
   <title>${label}</title>
-  ${defs()}
+  ${defs(theme)}
   ${styles(model)}
-  <rect width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="24" fill="#0a1418"/>
+  <rect width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="24" fill="${theme.water[2]}"/>
   <g clip-path="url(#tank)">
     <rect x="10" y="10" width="840" height="280" fill="url(#water)"/>
     <rect x="10" y="10" width="840" height="280" fill="url(#glow)"/>
-    ${rays()}
+    ${rays(theme)}
     <rect x="10" y="10" width="840" height="280" filter="url(#haze)" opacity="0.55"/>
     ${plantsBack}
     <path d="M10,252 C80,246 160,258 250,250 C360,240 470,258 560,249 C670,238 760,256 850,248 L850,290 L10,290 Z" fill="url(#sand)"/>
     <path d="M10,252 C80,246 160,258 250,250 C360,240 470,258 560,249 C670,238 760,256 850,248" fill="none" stroke="rgba(210,190,150,0.22)" stroke-width="1.2"/>
-    ${drawReef(model.reef)}
-    ${rocks()}
+    ${drawReef(model.reef, theme)}
+    ${rocks(theme)}
     <g filter="url(#soft)">
       ${model.fish.map(drawFish).join("")}
     </g>
@@ -317,7 +321,7 @@ export function renderAquarium(activity: Activity): string {
     ${model.bubbles.map(drawBubble).join("")}
     ${surface()}
     <rect x="10" y="10" width="840" height="280" fill="url(#glass)"/>
-    ${caption(activity, model)}
+    ${caption(activity, model, theme)}
   </g>
   <rect x="10.6" y="10.6" width="838.8" height="278.8" rx="21" fill="none" stroke="rgba(198,176,122,0.55)" stroke-width="1.4"/>
   <rect x="13" y="13" width="834" height="274" rx="19" fill="none" stroke="rgba(214,236,232,0.16)" stroke-width="0.8"/>

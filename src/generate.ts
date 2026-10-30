@@ -6,6 +6,6 @@ export async function generateAquarium(
   options: GenerateOptions,
 ): Promise<GenerateResult> {
   const activity = await loadActivity(options);
-  const svg = renderAquarium(activity);
+  const svg = renderAquarium(activity, options.theme ?? "deep");
   return { svg, activity };
 }

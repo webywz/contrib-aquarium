@@ -1,12 +1,12 @@
 {
   "name": "contrib-aquarium",
-  "version": "0.1.0",
-  "description": "A living SVG aquarium driven by a GitHub contribution graph — embeddable in profile READMEs.",
+  "version": "0.1.1",
+  "description": "A living SVG aquarium driven by a GitHub contribution graph \u2014 embeddable in profile READMEs.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "contrib-aquarium": "./dist/cli.js"
+    "contrib-aquarium": "dist/cli.js"
   },
   "exports": {
     ".": {
