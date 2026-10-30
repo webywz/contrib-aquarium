@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.3 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.4 · Node.js 18.18+
 
 ---
 
@@ -177,7 +177,7 @@ Copy [`examples/github-action.yml`](examples/github-action.yml) into your **prof
 
 ```yaml
 # Pin a release tag — avoid @main.
-- uses: webywz/contrib-aquarium@v0.1.3
+- uses: webywz/contrib-aquarium@v0.1.4
   with:
     user: ${{ github.repository_owner }}
     out: aquarium.svg

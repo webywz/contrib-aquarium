@@ -9,6 +9,12 @@ import type { LoadSource } from "./types.js";
 
 type FlagMap = Record<string, string | boolean>;
 
+/** Usage / argv errors — matches other webywz CLIs that reserve 2 for usage. */
+const USAGE_EXIT = 2;
+
+const BOOLEAN_FLAGS = new Set(["help", "version", "quiet"]);
+const VALUE_FLAGS = new Set(["user", "out", "source", "theme", "width", "height", "token"]);
+
 function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMap } {
   const args = argv.slice(2);
   const command = args[0]?.startsWith("-") ? undefined : args[0];
@@ -28,17 +34,26 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
       flags.quiet = true;
       continue;
     }
-    if (!arg.startsWith("--")) {
+    if (!arg.startsWith("-")) {
       throw new Error(`Unexpected argument: ${arg}`);
     }
-    const key = arg.slice(2);
-    const next = args[i + 1];
-    if (!next || next.startsWith("--")) {
-      flags[key] = true;
-    } else {
-      flags[key] = next;
-      i += 1;
+    if (!arg.startsWith("--") || arg === "--") {
+      throw new Error(`Unknown option: ${arg}`);
     }
+    const key = arg.slice(2);
+    if (BOOLEAN_FLAGS.has(key)) {
+      flags[key] = true;
+      continue;
+    }
+    if (!VALUE_FLAGS.has(key)) {
+      throw new Error(`Unknown option: ${arg}`);
+    }
+    const next = args[i + 1];
+    if (!next || next.startsWith("-")) {
+      throw new Error(`Missing value for --${key}`);
+    }
+    flags[key] = next;
+    i += 1;
   }
   return { command, flags };
 }
@@ -107,7 +122,7 @@ async function run(argv: string[]): Promise<number> {
     parsed = parseArgs(argv);
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
-    return 1;
+    return USAGE_EXIT;
   }
 
   const { command, flags } = parsed;
@@ -117,17 +132,17 @@ async function run(argv: string[]): Promise<number> {
   }
   if (flags.help || !command) {
     console.log(help());
-    return flags.help || !command ? 0 : 1;
+    return 0;
   }
   if (command !== "generate") {
     console.error(`Unknown command "${command}". Try --help.`);
-    return 1;
+    return USAGE_EXIT;
   }
 
   const user = asString(flags.user);
   if (!user) {
     console.error("Missing --user <login>");
-    return 1;
+    return USAGE_EXIT;
   }
 
   const out = resolve(asString(flags.out) ?? "aquarium.svg");
