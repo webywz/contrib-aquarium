@@ -21,6 +21,8 @@ export type Activity = {
 
 export type LoadSource = "auto" | DataSource;
 
+export type { ThemeName } from "./theme.js";
+
 export type LoadOptions = {
   user: string;
   token?: string;
@@ -29,7 +31,7 @@ export type LoadOptions = {
   fetchImpl?: typeof fetch;
 };
 
-export type GenerateOptions = LoadOptions;
+export type GenerateOptions = LoadOptions & { theme?: import("./theme.js").ThemeName };
 
 export type GenerateResult = {
   svg: string;

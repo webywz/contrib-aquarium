@@ -2,6 +2,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { generateAquarium } from "./generate.js";
+import { parseTheme } from "./theme.js";
 import { readPackageVersion } from "./util.js";
 import type { LoadSource } from "./types.js";
 
@@ -44,12 +45,14 @@ Turn a GitHub year into a living SVG aquarium.
 Usage:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
                             [--source auto|graphql|events|mock]
+                            [--theme deep|reef|midnight]
                             [--token <gh_token>]
 
 Options:
   --user      GitHub login (required)
   --out       Output path (default: aquarium.svg)
   --source    auto (default), graphql, events, or mock
+  --theme     Color theme: deep (default), reef, or midnight
   --token     GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
   --help      Show this message
   --version   Print version
@@ -106,15 +109,17 @@ async function run(argv: string[]): Promise<number> {
 
   const out = resolve(asString(flags.out) ?? "aquarium.svg");
   try {
+    const theme = parseTheme(asString(flags.theme));
     const { svg, activity } = await generateAquarium({
       user,
       token: asString(flags.token),
       source: parseSource(flags.source),
+      theme,
     });
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, svg, "utf8");
     console.error(
-      `contrib-aquarium · ${activity.login} · source=${activity.source} · ${activity.totalContributions} contributions`,
+      `contrib-aquarium · ${activity.login} · source=${activity.source} · theme=${theme} · ${activity.totalContributions} contributions`,
     );
     console.error(`wrote ${out}`);
     return 0;

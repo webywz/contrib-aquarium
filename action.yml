@@ -16,6 +16,10 @@ inputs:
     description: "Activity source: auto, graphql, events, or mock"
     required: false
     default: auto
+  theme:
+    description: "Color theme: deep, reef, or midnight"
+    required: false
+    default: deep
   token:
     description: GitHub token used for GraphQL (defaults to the workflow token)
     required: false
@@ -43,3 +47,4 @@ runs:
         --user "${{ inputs.user }}"
         --out "${{ github.workspace }}/${{ inputs.out }}"
         --source "${{ inputs.source }}"
+        --theme "${{ inputs.theme }}"

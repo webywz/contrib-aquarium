@@ -14,16 +14,8 @@ import {
   type ReefColumn,
   type Species,
 } from "./types.js";
+import { getTheme, type Theme, type ThemeName } from "./theme.js";
 import { clamp, hashString, lerp, mulberry32, pick, type Rng } from "./util.js";
-
-const PALETTES = [
-  { body: "#e6c07b", accent: "#c46b4a" },
-  { body: "#d9a441", accent: "#b87333" },
-  { body: "#5fa8a3", accent: "#2f6f74" },
-  { body: "#c5d4d1", accent: "#7f9996" },
-  { body: "#d4896a", accent: "#9e4d3c" },
-  { body: "#7eb3c9", accent: "#3d6f88" },
-] as const;
 
 export function flattenDays(activity: Activity): ContributionDay[] {
   return activity.weeks.flatMap((week) => week.days);
@@ -102,7 +94,8 @@ function speciesForRank(rank: number, intensity: number, rng: Rng): Species {
   return "tetra";
 }
 
-export function mapAquarium(activity: Activity): AquariumModel {
+export function mapAquarium(activity: Activity, themeName: ThemeName = "deep"): AquariumModel {
+  const theme: Theme = getTheme(themeName);
   const days = flattenDays(activity);
   const dayCount = Math.max(days.length, 1);
   const activeDays = days.filter((day) => day.count > 0).length;
@@ -147,7 +140,7 @@ export function mapAquarium(activity: Activity): AquariumModel {
       y = 56 + rng() * 168;
     }
     usedY.push(y);
-    const palette = pick(rng, PALETTES);
+    const palette = pick(rng, theme.fish);
     const duration = lerp(18, 9, turbulence) + rng() * 8 + size * 0.18;
     fish.push({
       id: i,
