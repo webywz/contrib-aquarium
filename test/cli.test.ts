@@ -101,8 +101,46 @@ describe("CLI", () => {
 
   it("rejects a missing user", async () => {
     const result = await runCli(["generate"]);
-    assert.equal(result.code, 1);
+    assert.equal(result.code, 2);
     assert.match(result.stderr, /Missing --user/);
+  });
+
+  it("rejects unknown options instead of ignoring them", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "cli-unknown",
+      "--source",
+      "mock",
+      "--mock",
+    ]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Unknown option: --mock/);
+  });
+
+  it("rejects a bare unknown flag like --foo", async () => {
+    const result = await runCli(["generate", "--user", "cli-foo", "--foo"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Unknown option: --foo/);
+  });
+
+  it("rejects unexpected positional arguments", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "cli-pos",
+      "--source",
+      "mock",
+      "extra",
+    ]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Unexpected argument: extra/);
+  });
+
+  it("rejects --user without a value", async () => {
+    const result = await runCli(["generate", "--user", "--source", "mock"]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /Missing value for --user/);
   });
 
   it("documents --theme in help", async () => {
