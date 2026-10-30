@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
@@ -29,12 +30,25 @@ async function runCli(args: string[]): Promise<{ code: number; stdout: string; s
 }
 
 describe("CLI", () => {
-  it("prints help", async () => {
+  it("prints help with package version", async () => {
+    const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8")) as {
+      version: string;
+    };
     const result = await runCli(["--help"]);
     assert.equal(result.code, 0);
-    assert.match(result.stdout, /contrib-aquarium/);
+    assert.match(result.stdout, new RegExp(`contrib-aquarium ${pkg.version}`));
     assert.match(result.stdout, /--user/);
     assert.match(result.stdout, /GraphQL/);
+    assert.match(result.stdout, /--quiet/);
+  });
+
+  it("prints --version matching package.json", async () => {
+    const pkg = JSON.parse(await readFile(join(root, "package.json"), "utf8")) as {
+      version: string;
+    };
+    const result = await runCli(["--version"]);
+    assert.equal(result.code, 0);
+    assert.equal(result.stdout.trim(), pkg.version);
   });
 
   it("writes a mock aquarium to --out", async () => {
@@ -52,9 +66,34 @@ describe("CLI", () => {
       ]);
       assert.equal(result.code, 0, result.stderr);
       assert.match(result.stderr, /source=mock/);
+      assert.match(result.stderr, /860×300/);
+      assert.match(result.stderr, /cli-demo/);
       const svg = await readFile(out, "utf8");
       assert.match(svg, /<svg /);
       assert.match(svg, /data-user="cli-demo"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("suppresses summary with --quiet", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-quiet-"));
+    const out = join(dir, "quiet.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "cli-quiet",
+        "--source",
+        "mock",
+        "--out",
+        out,
+        "--quiet",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.equal(result.stderr.trim(), "");
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-user="cli-quiet"/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -121,6 +160,7 @@ describe("CLI", () => {
         out,
       ]);
       assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stderr, /430×150/);
       const svg = await readFile(out, "utf8");
       assert.match(svg, /width="430"/);
       assert.match(svg, /height="150"/);
