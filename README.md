@@ -201,13 +201,16 @@ Default behavior (without `--static`) includes full animations. The `prefers-red
 
 ## JSON output · JSON 输出
 
-`--json` prints a machine-readable contribution summary to stdout instead of generating SVG. Useful for badge/CI pipelines that need stats without rendering.
+`--json` prints a machine-readable contribution summary to stdout instead of generating SVG. Useful for badge/CI pipelines that need stats without rendering. When used with `--out`, writes the JSON summary to the specified file with silent stdout.
 
-`--json` 将机器可读的贡献摘要打印到标准输出，而不生成 SVG。适用于需要统计数据而无需渲染的徽章 / CI 管道。
+`--json` 将机器可读的贡献摘要打印到标准输出，而不生成 SVG。适用于需要统计数据而无需渲染的徽章 / CI 管道。与 `--out` 一起使用时，将 JSON 摘要写入指定文件，标准输出保持静默。
 
 ```bash
-# Get JSON summary · 获取 JSON 摘要
+# Get JSON summary to stdout · 获取 JSON 摘要到标准输出
 npx contrib-aquarium generate --user webywz --json
+
+# Write JSON summary to file · 将 JSON 摘要写入文件
+npx contrib-aquarium generate --user webywz --json --out report.json
 
 # Output includes · 输出包含:
 # - login, name, totalContributions, source, range
@@ -233,9 +236,9 @@ Example output · 输出示例:
 }
 ```
 
-When `--json` is set, `--out` is ignored (nothing is written to disk). `--theme`, `--width`, `--height`, and `--static` have no effect in JSON mode.
+When `--json` is set without `--out`, JSON is printed to stdout. With `--out`, the JSON is written to the specified file with silent stdout (nothing is written to disk in SVG mode). `--theme`, `--width`, `--height`, and `--static` have no effect in JSON mode.
 
-设置 `--json` 时，`--out` 被忽略（不写入磁盘）。`--theme`、`--width`、`--height` 和 `--static` 在 JSON 模式下无效。
+设置 `--json` 时，不带 `--out` 则输出到标准输出；带 `--out` 则写入指定文件且标准输出保持静默（不写入 SVG）。`--theme`、`--width`、`--height` 和 `--static` 在 JSON 模式下无效。
 
 ---
 
@@ -312,7 +315,7 @@ contrib-aquarium --list-themes [--json] [--locale <en|zh>]
 | `--height` | proportional · 等比 | Display height · 展示高 |
 | `--static` | off | Strip animations; fish rest · 移除动画 |
 | `--no-animate` | off | Same as `--static` · 等同 `--static` |
-| `--json` | off | Print JSON summary to stdout · 打印 JSON 摘要到标准输出 |
+| `--json` | off | Print JSON to stdout; write to file with --out · 打印 JSON 到标准输出或与 --out 写入文件 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 | `--locale` | `en` | Interface language: `en` or `zh` · 界面语言 |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
