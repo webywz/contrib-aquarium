@@ -667,6 +667,241 @@ describe("CLI", () => {
     }
   });
 
+  it("documents --html in help (en + zh)", async () => {
+    const en = await runCli(["--help"]);
+    const zh = await runCli(["--help", "--locale", "zh"]);
+    assert.equal(en.code, 0);
+    assert.equal(zh.code, 0);
+    assert.match(en.stdout, /--html \[path\]/);
+    assert.match(en.stdout, /Self-contained HTML report/);
+    assert.match(en.stdout, /--html and --json cannot share stdout/);
+    assert.match(zh.stdout, /--html \[path\]/);
+    assert.match(zh.stdout, /自包含 HTML 报告/);
+    assert.match(zh.stdout, /--html 与 --json 不能同时使用/);
+  });
+
+  it("prints HTML to stdout when --html path is omitted", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-stdout-"));
+    const out = join(dir, "tank.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "html-stdout",
+        "--source",
+        "mock",
+        "--out",
+        out,
+        "--html",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /<!DOCTYPE html>/i);
+      assert.match(result.stdout, /contrib-aquarium/);
+      assert.match(result.stdout, /html-stdout/);
+      assert.match(result.stdout, /<svg /);
+      assert.doesNotMatch(result.stdout, /cdn\.|unpkg|jsdelivr|fonts\.googleapis/i);
+      assert.doesNotMatch(result.stdout, /<script[\s>]/i);
+      assert.match(result.stderr, /source=mock/);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-user="html-stdout"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes HTML to path and does not dump it to stdout", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-file-"));
+    const out = join(dir, "tank.svg");
+    const htmlFile = join(dir, "nested", "report.html");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "html-file",
+        "--source",
+        "mock",
+        "--theme",
+        "reef",
+        "--out",
+        out,
+        "--html",
+        htmlFile,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.equal(result.stdout.trim(), "");
+      assert.match(result.stderr, /wrote html report to/);
+      assert.match(result.stderr, /source=mock/);
+      const html = await readFile(htmlFile, "utf8");
+      assert.match(html, /<!DOCTYPE html>/i);
+      assert.match(html, /html-file/);
+      assert.match(html, /reef/);
+      assert.match(html, /<svg /);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-theme="reef"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects --html together with --json", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "html-json",
+      "--source",
+      "mock",
+      "--html",
+      "--json",
+    ]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /cannot be combined with --json/);
+    assert.doesNotMatch(result.stdout, /<!DOCTYPE html>/i);
+    assert.doesNotMatch(result.stdout, /\{/);
+  });
+
+  it("rejects --html together with --json in Chinese", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "html-json-zh",
+      "--source",
+      "mock",
+      "--html",
+      "--json",
+      "--locale",
+      "zh",
+    ]);
+    assert.equal(result.code, 2);
+    assert.match(result.stderr, /不能与 --json 同时使用/);
+  });
+
+  it("keeps --json stdout unchanged when --html is absent", async () => {
+    const result = await runCli([
+      "generate",
+      "--user",
+      "json-no-html",
+      "--source",
+      "mock",
+      "--json",
+    ]);
+    assert.equal(result.code, 0, result.stderr);
+    const json = JSON.parse(result.stdout) as { login: string; source: string };
+    assert.equal(json.login, "json-no-html");
+    assert.equal(json.source, "mock");
+    assert.doesNotMatch(result.stdout, /<!DOCTYPE html>/i);
+  });
+
+  it("suppresses pretty summary with --html --quiet (HTML still on stdout)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-quiet-"));
+    const out = join(dir, "quiet.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "html-quiet",
+        "--source",
+        "mock",
+        "--out",
+        out,
+        "--html",
+        "--quiet",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /<!DOCTYPE html>/i);
+      assert.equal(result.stderr.trim(), "");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps --github annotations with --html (annotations on stderr)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-gh-"));
+    const out = join(dir, "tank.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "html-github",
+        "--source",
+        "mock",
+        "--out",
+        out,
+        "--html",
+        "--github",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /<!DOCTYPE html>/i);
+      assert.doesNotMatch(result.stdout, /::(error|warning|notice)::/);
+      assert.match(result.stderr, /::notice::html-github · theme=deep · /);
+      assert.match(result.stderr, /source=mock/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps --github + --quiet with --html path (no pretty line, file written)", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-gh-quiet-"));
+    const out = join(dir, "tank.svg");
+    const htmlFile = join(dir, "report.html");
+    const summary = join(dir, "step_summary.md");
+    try {
+      const result = await runCli(
+        [
+          "generate",
+          "--user",
+          "html-gh-quiet",
+          "--source",
+          "mock",
+          "--out",
+          out,
+          "--html",
+          htmlFile,
+          "--quiet",
+          "--github",
+        ],
+        { GITHUB_STEP_SUMMARY: summary },
+      );
+      assert.equal(result.code, 0, result.stderr);
+      assert.equal(result.stdout.trim(), "");
+      assert.match(result.stderr, /::notice::html-gh-quiet · /);
+      assert.doesNotMatch(result.stderr, /source=mock/);
+      assert.doesNotMatch(result.stderr, /wrote html report to/);
+      const html = await readFile(htmlFile, "utf8");
+      assert.match(html, /html-gh-quiet/);
+      const body = await readFile(summary, "utf8");
+      assert.match(body, /## contrib-aquarium/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("localizes HTML labels with --locale zh and keeps SVG --out", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-zh-"));
+    const out = join(dir, "tank.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "html-zh",
+        "--source",
+        "mock",
+        "--out",
+        out,
+        "--html",
+        "--locale",
+        "zh",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /lang="zh"/);
+      assert.match(result.stdout, /离线鱼缸报告/);
+      assert.match(result.stderr, /source=mock/);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-user="html-zh"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("does not write GITHUB_STEP_SUMMARY without --github", async () => {
     const dir = await mkdtemp(join(tmpdir(), "aquarium-no-sum-"));
     const out = join(dir, "tank.svg");

@@ -42,6 +42,10 @@ const messages: Record<string, MessageEntry> = {
     en: (value: string) => `Unknown --source "${value}". Use auto, graphql, events, or mock.`,
     zh: (value: string) => `未知 --source "${value}"，使用 auto、graphql、events 或 mock。`,
   },
+  htmlJsonConflict: {
+    en: "--html cannot be combined with --json (choose one primary export)",
+    zh: "--html 不能与 --json 同时使用（请选择一种主输出）",
+  },
 };
 
 export function getErrorMessage(locale: Locale, key: string, arg?: string): string {
