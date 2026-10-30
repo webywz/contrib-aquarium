@@ -24,6 +24,7 @@ jobs:
           user: ${{ github.repository_owner }}
           out: aquarium.svg
           # theme: reef   # optional: deep | reef | midnight
+          # width: 640    # optional: narrower README embed (viewBox stays 860×300)
       - name: Commit aquarium.svg
         run: |
           git config user.name "github-actions[bot]"

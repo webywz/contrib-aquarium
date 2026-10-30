@@ -46,6 +46,7 @@ Usage:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
                             [--source auto|graphql|events|mock]
                             [--theme deep|reef|midnight]
+                            [--width <px>] [--height <px>]
                             [--token <gh_token>]
 
 Options:
@@ -53,6 +54,8 @@ Options:
   --out       Output path (default: aquarium.svg)
   --source    auto (default), graphql, events, or mock
   --theme     Color theme: deep (default), reef, or midnight
+  --width     SVG display width in px (default: 860); viewBox stays 860×300
+  --height    SVG display height in px (default: proportional to --width)
   --token     GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
   --help      Show this message
   --version   Print version
@@ -63,6 +66,7 @@ Data sources (auto):
   3. Deterministic mock from username  always works; offline demos
 
 The SVG is self-contained (CSS + SMIL). Drop it in a README as an image.
+Use --width for narrower README embeds without squashing the fish.
 `;
 }
 
@@ -76,6 +80,18 @@ function parseSource(value: string | boolean | undefined): LoadSource {
     return value;
   }
   throw new Error(`Unknown --source "${value}". Use auto, graphql, events, or mock.`);
+}
+
+function parsePositiveNumber(flag: string, value: string | boolean | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new Error(`Missing value for --${flag}`);
+  }
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`Invalid --${flag} "${value}". Use a positive number.`);
+  }
+  return n;
 }
 
 async function run(argv: string[]): Promise<number> {
@@ -110,11 +126,15 @@ async function run(argv: string[]): Promise<number> {
   const out = resolve(asString(flags.out) ?? "aquarium.svg");
   try {
     const theme = parseTheme(asString(flags.theme));
+    const width = parsePositiveNumber("width", flags.width);
+    const height = parsePositiveNumber("height", flags.height);
     const { svg, activity } = await generateAquarium({
       user,
       token: asString(flags.token),
       source: parseSource(flags.source),
       theme,
+      width,
+      height,
     });
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, svg, "utf8");

@@ -31,7 +31,16 @@ export type LoadOptions = {
   fetchImpl?: typeof fetch;
 };
 
-export type GenerateOptions = LoadOptions & { theme?: import("./theme.js").ThemeName };
+export type SvgSizeOptions = {
+  /** Display width in px (viewBox stays 860×300). */
+  width?: number;
+  /** Display height in px; defaults to proportional when only width is set. */
+  height?: number;
+};
+
+export type GenerateOptions = LoadOptions & {
+  theme?: import("./theme.js").ThemeName;
+} & SvgSizeOptions;
 
 export type GenerateResult = {
   svg: string;
