@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { generateAquarium } from "./generate.js";
 import { resolveSvgDisplaySize } from "./render.js";
-import { parseTheme } from "./theme.js";
+import { parseTheme, THEME_NAMES } from "./theme.js";
 import { readPackageVersion } from "./util.js";
 import { currentStreak, flattenDays, mapBubbleCount, mapFishCount, mapPlantCount, recentTotal } from "./mapping.js";
 import type { LoadSource } from "./types.js";
@@ -13,7 +13,7 @@ type FlagMap = Record<string, string | boolean>;
 /** Usage / argv errors — matches other webywz CLIs that reserve 2 for usage. */
 const USAGE_EXIT = 2;
 
-const BOOLEAN_FLAGS = new Set(["help", "version", "quiet", "static", "no-animate", "json"]);
+const BOOLEAN_FLAGS = new Set(["help", "version", "quiet", "static", "no-animate", "json", "list-themes"]);
 const VALUE_FLAGS = new Set(["user", "out", "source", "theme", "width", "height", "token"]);
 
 function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMap } {
@@ -73,6 +73,7 @@ Usage:
                             [--json]
                             [--token <gh_token>]
                             [--quiet]
+  contrib-aquarium --list-themes [--json]
 
 Options:
   --user         GitHub login (required) | GitHub 用户名（必填）
@@ -87,6 +88,8 @@ Options:
                  打印 JSON 摘要到标准输出而非 SVG（忽略 --out）
   --token        GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN | GitHub token
   --quiet        Suppress the success summary line | 禁用成功摘要行
+  --list-themes  Print available theme names (one per line; with --json: JSON array)
+                 打印可用主题名称（每行一个；加 --json 则输出 JSON 数组）
   --help         Show this message | 显示帮助
   --version      Print version | 打印版本
 
@@ -158,6 +161,16 @@ async function run(argv: string[]): Promise<number> {
   const { command, flags } = parsed;
   if (flags.version) {
     console.log(readPackageVersion());
+    return 0;
+  }
+  if (flags["list-themes"]) {
+    if (flags.json) {
+      console.log(JSON.stringify([...THEME_NAMES]));
+    } else {
+      for (const theme of THEME_NAMES) {
+        console.log(theme);
+      }
+    }
     return 0;
   }
   if (flags.help || !command) {

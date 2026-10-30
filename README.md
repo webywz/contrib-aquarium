@@ -81,6 +81,10 @@ npx contrib-aquarium generate --user webywz --source mock --out aquarium.svg
 
 # theme
 npx contrib-aquarium generate --user webywz --theme reef --out aquarium.svg
+
+# list available themes
+npx contrib-aquarium --list-themes
+npx contrib-aquarium --list-themes --json
 ```
 
 In a README:
@@ -269,6 +273,8 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--json]
                           [--token <gh_token>]
                           [--quiet]
+
+contrib-aquarium --list-themes [--json]
 ```
 
 | Flag | Default | |
@@ -284,6 +290,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--json` | off | Print JSON summary to stdout · 打印 JSON 摘要到标准输出 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
+| `--list-themes` | off | Print available themes (one per line; with `--json`: JSON array) · 打印可用主题 |
 
 ```bash
 npm run generate -- --user webywz --out docs/aquarium.svg
