@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.1 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.3 · Node.js 18.18+
 
 ---
 
@@ -176,10 +176,13 @@ npx contrib-aquarium generate --user YOUR_LOGIN --width 640 --out aquarium.svg
 Copy [`examples/github-action.yml`](examples/github-action.yml) into your **profile** repo (`USER/USER`) as `.github/workflows/aquarium.yml`. It runs on a daily cron + `workflow_dispatch`, uses this repo as a composite action, and commits `aquarium.svg` when the tank changed.
 
 ```yaml
-- uses: webywz/contrib-aquarium@main
+# Pin a release tag — avoid @main.
+- uses: webywz/contrib-aquarium@v0.1.3
   with:
     user: ${{ github.repository_owner }}
     out: aquarium.svg
+    # theme: reef
+    # width: 640
 ```
 
 This project's demo refreshes the same way: [`.github/workflows/daily-aquarium.yml`](.github/workflows/daily-aquarium.yml) updates [`docs/aquarium.svg`](docs/aquarium.svg) for `webywz`.
@@ -198,6 +201,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--theme deep|reef|midnight]
                           [--width <px>] [--height <px>]
                           [--token <gh_token>]
+                          [--quiet]
 ```
 
 | Flag | Default | |
@@ -209,6 +213,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
 | `--width` | `860` | Display width (viewBox fixed) · 展示宽 |
 | `--height` | proportional · 等比 | Display height · 展示高 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
+| `--quiet` | off | Suppress success summary · 关闭成功摘要 |
 
 ```bash
 npm run generate -- --user webywz --out docs/aquarium.svg

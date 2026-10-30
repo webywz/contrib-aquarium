@@ -19,7 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: webywz/contrib-aquarium@main
+      # Pin a release tag — avoid @main (moving tip).
+      - uses: webywz/contrib-aquarium@v0.1.3
         with:
           user: ${{ github.repository_owner }}
           out: aquarium.svg

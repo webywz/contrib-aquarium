@@ -2,6 +2,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { generateAquarium } from "./generate.js";
+import { resolveSvgDisplaySize } from "./render.js";
 import { parseTheme } from "./theme.js";
 import { readPackageVersion } from "./util.js";
 import type { LoadSource } from "./types.js";
@@ -21,6 +22,10 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
     }
     if (arg === "-v" || arg === "--version") {
       flags.version = true;
+      continue;
+    }
+    if (arg === "-q" || arg === "--quiet") {
+      flags.quiet = true;
       continue;
     }
     if (!arg.startsWith("--")) {
@@ -48,6 +53,7 @@ Usage:
                             [--theme deep|reef|midnight]
                             [--width <px>] [--height <px>]
                             [--token <gh_token>]
+                            [--quiet]
 
 Options:
   --user      GitHub login (required)
@@ -57,6 +63,7 @@ Options:
   --width     SVG display width in px (default: 860); viewBox stays 860×300
   --height    SVG display height in px (default: proportional to --width)
   --token     GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
+  --quiet     Suppress the success summary line
   --help      Show this message
   --version   Print version
 
@@ -124,6 +131,7 @@ async function run(argv: string[]): Promise<number> {
   }
 
   const out = resolve(asString(flags.out) ?? "aquarium.svg");
+  const quiet = Boolean(flags.quiet);
   try {
     const theme = parseTheme(asString(flags.theme));
     const width = parsePositiveNumber("width", flags.width);
@@ -138,10 +146,12 @@ async function run(argv: string[]): Promise<number> {
     });
     await mkdir(dirname(out), { recursive: true });
     await writeFile(out, svg, "utf8");
-    console.error(
-      `contrib-aquarium · ${activity.login} · source=${activity.source} · theme=${theme} · ${activity.totalContributions} contributions`,
-    );
-    console.error(`wrote ${out}`);
+    if (!quiet) {
+      const size = resolveSvgDisplaySize({ width, height });
+      console.error(
+        `${activity.login} · source=${activity.source} · theme=${theme} · ${size.width}×${size.height} · ${out}`,
+      );
+    }
     return 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
