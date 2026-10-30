@@ -287,4 +287,38 @@ describe("CLI", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("lists themes with --list-themes", async () => {
+    const result = await runCli(["--list-themes"]);
+    assert.equal(result.code, 0, result.stderr);
+    const lines = result.stdout.trim().split("\n");
+    assert.deepEqual(lines, ["deep", "reef", "midnight", "lagoon", "ember", "fog"]);
+  });
+
+  it("lists themes as JSON with --list-themes --json", async () => {
+    const result = await runCli(["--list-themes", "--json"]);
+    assert.equal(result.code, 0, result.stderr);
+    const themes = JSON.parse(result.stdout) as string[];
+    assert.deepEqual(themes, ["deep", "reef", "midnight", "lagoon", "ember", "fog"]);
+  });
+
+  it("lists themes without requiring --user", async () => {
+    const result = await runCli(["--list-themes"]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.match(result.stdout, /deep/);
+    assert.match(result.stdout, /reef/);
+  });
+
+  it("lists themes without requiring generate command", async () => {
+    const result = await runCli(["--list-themes"]);
+    assert.equal(result.code, 0, result.stderr);
+    const lines = result.stdout.trim().split("\n");
+    assert.equal(lines.length, 6);
+  });
+
+  it("documents --list-themes in help", async () => {
+    const result = await runCli(["--help"]);
+    assert.equal(result.code, 0);
+    assert.match(result.stdout, /--list-themes/);
+  });
 });
