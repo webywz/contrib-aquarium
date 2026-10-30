@@ -17,9 +17,13 @@ inputs:
     required: false
     default: auto
   theme:
-    description: "Color theme: deep, reef, or midnight"
+    description: "Color theme: deep, reef, midnight, lagoon, ember, or fog"
     required: false
     default: deep
+  static:
+    description: "Strip animations; fish and plants rest (boolean)"
+    required: false
+    default: "false"
   width:
     description: "SVG display width in px (default 860); viewBox stays proportional"
     required: false
@@ -63,5 +67,8 @@ runs:
         fi
         if [ -n "${{ inputs.height }}" ]; then
           ARGS+=(--height "${{ inputs.height }}")
+        fi
+        if [ "${{ inputs.static }}" = "true" ]; then
+          ARGS+=(--static)
         fi
         node "${{ github.action_path }}/dist/cli.js" "${ARGS[@]}"

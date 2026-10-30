@@ -9,6 +9,7 @@ export async function generateAquarium(
   const svg = renderAquarium(activity, options.theme ?? "deep", {
     width: options.width,
     height: options.height,
+    static: options.static,
   });
   return { svg, activity };
 }
