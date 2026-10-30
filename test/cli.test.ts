@@ -258,6 +258,68 @@ describe("CLI", () => {
     assert.ok(json.range.to);
   });
 
+  it("writes JSON to file with --json --out", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-json-out-"));
+    const out = join(dir, "report.json");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "json-file",
+        "--source",
+        "mock",
+        "--json",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      // Stdout should be empty (silent)
+      assert.equal(result.stdout.trim(), "");
+      // File should contain valid JSON
+      const jsonContent = await readFile(out, "utf8");
+      const json = JSON.parse(jsonContent) as {
+        login: string;
+        source: string;
+        totalContributions: number;
+        streak: number;
+        activeDays: number;
+        recent14: number;
+        fishCount: number;
+        plantCount: number;
+        bubbleCount: number;
+      };
+      assert.equal(json.login, "json-file");
+      assert.equal(json.source, "mock");
+      assert.equal(typeof json.totalContributions, "number");
+      assert.equal(typeof json.fishCount, "number");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates parent directories for --json --out", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-json-nested-"));
+    const out = join(dir, "nested", "deep", "report.json");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "json-nested",
+        "--source",
+        "mock",
+        "--json",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      const jsonContent = await readFile(out, "utf8");
+      const json = JSON.parse(jsonContent) as { login: string };
+      assert.equal(json.login, "json-nested");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("documents --json in help", async () => {
     const result = await runCli(["--help"]);
     assert.equal(result.code, 0);

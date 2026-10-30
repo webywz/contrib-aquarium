@@ -87,7 +87,7 @@ function help(locale: Locale): string {
   --height       SVG 显示高度（px，默认与 --width 等比）
   --static       移除动画，鱼和植物静止（同 --no-animate）
   --no-animate   移除动画，鱼和植物静止（同 --static）
-  --json         打印 JSON 摘要到标准输出而非 SVG（忽略 --out）
+  --json         打印 JSON 摘要到标准输出而非 SVG；与 --out 一起使用时写入文件
   --token        GitHub token；回退到 GITHUB_TOKEN / GH_TOKEN
   --locale       界面语言: en（默认）或 zh
   --quiet        禁用成功摘要行
@@ -145,7 +145,7 @@ Options:
   --height       SVG display height in px (default: proportional to --width)
   --static       Strip animations; fish and plants rest (same as --no-animate)
   --no-animate   Strip animations; fish and plants rest (same as --static)
-  --json         Print JSON summary to stdout instead of SVG (--out is ignored)
+  --json         Print JSON summary to stdout instead of SVG; writes to file with --out
   --token        GitHub token; falls back to GITHUB_TOKEN / GH_TOKEN
   --locale       Interface language: en (default) or zh
   --quiet        Suppress the success summary line
@@ -308,7 +308,18 @@ async function run(argv: string[]): Promise<number> {
         plantCount,
         bubbleCount,
       };
-      console.log(JSON.stringify(summary, null, 2));
+      const jsonOutput = JSON.stringify(summary, null, 2);
+      
+      // If --out is provided with --json, write JSON to file with silent stdout
+      if (flags.out) {
+        const jsonOutPath = resolve(asString(flags.out)!);
+        await mkdir(dirname(jsonOutPath), { recursive: true });
+        await writeFile(jsonOutPath, jsonOutput + "\n", "utf8");
+        return 0;
+      }
+      
+      // Otherwise, print to stdout as before
+      console.log(jsonOutput);
       return 0;
     }
 
