@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.6 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.8 · Node.js 18.18+
 
 ---
 
@@ -239,6 +239,30 @@ When `--json` is set, `--out` is ignored (nothing is written to disk). `--theme`
 
 ---
 
+## Interface language · 界面语言
+
+`--locale` controls the language for help text and terminal messages. Defaults to `en`.
+
+`--locale` 控制帮助文本和终端消息的语言，默认 `en`。
+
+```bash
+# English interface (default)
+npx contrib-aquarium --help
+
+# Chinese interface
+npx contrib-aquarium --help --locale zh
+
+# Chinese error messages
+npx contrib-aquarium generate --locale zh
+# 缺少 --user <login>
+```
+
+**JSON keys and values stay English** regardless of `--locale` (machine contract).
+
+**JSON 键和值保持英文**，不受 `--locale` 影响（机器契约）。
+
+---
+
 ## Embed daily · 每日嵌入
 
 Copy [`examples/github-action.yml`](examples/github-action.yml) into your **profile** repo (`USER/USER`) as `.github/workflows/aquarium.yml`. It runs on a daily cron + `workflow_dispatch`, uses this repo as a composite action, and commits `aquarium.svg` when the tank changed.
@@ -272,9 +296,10 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--static | --no-animate]
                           [--json]
                           [--token <gh_token>]
+                          [--locale <en|zh>]
                           [--quiet]
 
-contrib-aquarium --list-themes [--json]
+contrib-aquarium --list-themes [--json] [--locale <en|zh>]
 ```
 
 | Flag | Default | |
@@ -289,6 +314,7 @@ contrib-aquarium --list-themes [--json]
 | `--no-animate` | off | Same as `--static` · 等同 `--static` |
 | `--json` | off | Print JSON summary to stdout · 打印 JSON 摘要到标准输出 |
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
+| `--locale` | `en` | Interface language: `en` or `zh` · 界面语言 |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
 | `--list-themes` | off | Print available themes (one per line; with `--json`: JSON array) · 打印可用主题 |
 
