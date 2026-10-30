@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.8 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.10 · Node.js 18.18+
 
 ---
 
@@ -38,6 +38,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 | Themes | `deep` · `reef` · `midnight` (palette only) | 三种配色，布局与映射不变 |
 | Embed | Commit SVG, or refresh daily via composite Action | 提交 SVG，或用 Action 每日重画 |
 | API | CLI + TypeScript library | CLI + 库 |
+| Actions | `--github` workflow commands (`::notice::` / `::error::`) + job summary | `--github` 输出 Actions 注解与 Job Summary |
 
 ---
 
@@ -242,6 +243,26 @@ When `--json` is set without `--out`, JSON is printed to stdout. With `--out`, t
 
 ---
 
+## GitHub Actions · `--github`
+
+`--github` emits GitHub Actions workflow commands: `::error::` on failures / usage errors, and one `::notice::` on a successful generate (user, theme, output path or JSON mode, fish/activity counts). Successful `--list-themes` also gets a notice. When `GITHUB_STEP_SUMMARY` is set, a short Markdown job summary is appended. Without `--github`, behavior is unchanged — no annotations, no job-summary writes.
+
+`--github` 输出 GitHub Actions 工作流命令：失败 / 用法错误用 `::error::`，成功 generate 打一条 `::notice::`（用户、主题、输出路径或 JSON 模式、鱼数 / 贡献数）。成功的 `--list-themes` 同样打 notice。若设置了 `GITHUB_STEP_SUMMARY`，追加一段 Markdown Job Summary。不加 `--github` 时行为不变：无注解、不写 Job Summary。
+
+Combined with `--json`, stdout stays machine-parseable JSON; annotations go to stderr. Combined with `--quiet`, the pretty human success line is still suppressed, but annotations and the job summary still emit.
+
+与 `--json` 合用时，stdout 仍是可解析 JSON，注解写到 stderr。与 `--quiet` 合用时仍隐藏人类成功摘要行，但注解和 Job Summary 照常输出。
+
+```bash
+# Actions annotations on stderr · 在 Actions 日志里打注解
+npx contrib-aquarium generate --user YOUR_LOGIN --source mock --github
+
+# JSON on stdout, notice on stderr · stdout 仍是 JSON
+npx contrib-aquarium generate --user YOUR_LOGIN --json --github
+```
+
+---
+
 ## Interface language · 界面语言
 
 `--locale` controls the language for help text and terminal messages. Defaults to `en`.
@@ -301,8 +322,9 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--token <gh_token>]
                           [--locale <en|zh>]
                           [--quiet]
+                          [--github]
 
-contrib-aquarium --list-themes [--json] [--locale <en|zh>]
+contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 ```
 
 | Flag | Default | |
@@ -319,6 +341,7 @@ contrib-aquarium --list-themes [--json] [--locale <en|zh>]
 | `--token` | `$GITHUB_TOKEN` / `$GH_TOKEN` | GraphQL auth |
 | `--locale` | `en` | Interface language: `en` or `zh` · 界面语言 |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
+| `--github` | off | Actions annotations (`::error::` / `::notice::`) + job summary · Actions 注解与 Job Summary |
 | `--list-themes` | off | Print available themes (one per line; with `--json`: JSON array) · 打印可用主题 |
 
 ```bash
