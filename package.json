@@ -1,6 +1,6 @@
 {
   "name": "contrib-aquarium",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "A living SVG aquarium driven by a GitHub contribution graph \u2014 embeddable in profile READMEs.",
   "type": "module",
   "main": "./dist/index.js",

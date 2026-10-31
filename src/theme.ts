@@ -1,4 +1,4 @@
-export const THEME_NAMES = ["deep", "reef", "midnight", "lagoon", "ember", "fog"] as const;
+export const THEME_NAMES = ["deep", "reef", "midnight", "lagoon", "ember", "fog", "aurora"] as const;
 export type ThemeName = (typeof THEME_NAMES)[number];
 
 export type Theme = {
@@ -149,6 +149,28 @@ const FOG: Theme = {
   reef: ["#50545a", "#70747a", "#90949a"],
 };
 
+const AURORA: Theme = {
+  name: "aurora",
+  water: ["#0b2744", "#071a30", "#030d18"],
+  glow: { color: "#3ee8c8", mid: "#6a58d4" },
+  sand: ["#2a3c4c", "#141e28"],
+  film: "#8ef6e8",
+  glass: "#e4fffa",
+  kelp: ["#14524c", "#1c7068", "#0e3838", "#288880"],
+  fish: [
+    { body: "#6ef0d8", accent: "#2aa8c0" },
+    { body: "#b0ecff", accent: "#4a80d8" },
+    { body: "#c8b0ff", accent: "#7a58d8" },
+    { body: "#88ffb8", accent: "#28c078" },
+    { body: "#e8fff8", accent: "#70b0c8" },
+    { body: "#50d8f0", accent: "#9868e8" },
+  ],
+  caption: { title: "#e4fff6", meta: "#8ad0c4", note: "rgba(62,232,200,0.52)" },
+  ray: ["#3ee8c8", "#78c0ff", "#c498ff"],
+  rock: ["#101820", "#1c2834", "#2a3848"],
+  reef: ["#1e4850", "#2e6870", "#408890"],
+};
+
 const THEMES: Record<ThemeName, Theme> = {
   deep: DEEP,
   reef: REEF,
@@ -156,6 +178,7 @@ const THEMES: Record<ThemeName, Theme> = {
   lagoon: LAGOON,
   ember: EMBER,
   fog: FOG,
+  aurora: AURORA,
 };
 
 export function parseTheme(value: string | undefined): ThemeName {

@@ -158,6 +158,31 @@ describe("CLI", () => {
     assert.equal(result.code, 0);
     assert.match(result.stdout, /--theme/);
     assert.match(result.stdout, /reef/);
+    assert.match(result.stdout, /aurora/);
+  });
+
+  it("writes an aurora-themed aquarium", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-aurora-"));
+    const out = join(dir, "aurora.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "cli-aurora",
+        "--source",
+        "mock",
+        "--theme",
+        "aurora",
+        "--out",
+        out,
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stderr, /theme=aurora/);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-theme="aurora"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 
   it("writes a reef-themed aquarium", async () => {
@@ -364,14 +389,14 @@ describe("CLI", () => {
     const result = await runCli(["--list-themes"]);
     assert.equal(result.code, 0, result.stderr);
     const lines = result.stdout.trim().split("\n");
-    assert.deepEqual(lines, ["deep", "reef", "midnight", "lagoon", "ember", "fog"]);
+    assert.deepEqual(lines, ["deep", "reef", "midnight", "lagoon", "ember", "fog", "aurora"]);
   });
 
   it("lists themes as JSON with --list-themes --json", async () => {
     const result = await runCli(["--list-themes", "--json"]);
     assert.equal(result.code, 0, result.stderr);
     const themes = JSON.parse(result.stdout) as string[];
-    assert.deepEqual(themes, ["deep", "reef", "midnight", "lagoon", "ember", "fog"]);
+    assert.deepEqual(themes, ["deep", "reef", "midnight", "lagoon", "ember", "fog", "aurora"]);
   });
 
   it("lists themes without requiring --user", async () => {
@@ -385,7 +410,8 @@ describe("CLI", () => {
     const result = await runCli(["--list-themes"]);
     assert.equal(result.code, 0, result.stderr);
     const lines = result.stdout.trim().split("\n");
-    assert.equal(lines.length, 6);
+    assert.equal(lines.length, 7);
+    assert.ok(lines.includes("aurora"));
   });
 
   it("documents --list-themes in help", async () => {
@@ -632,8 +658,9 @@ describe("CLI", () => {
       "lagoon",
       "ember",
       "fog",
+      "aurora",
     ]);
-    assert.match(result.stderr, /::notice::listed 6 themes$/m);
+    assert.match(result.stderr, /::notice::listed 7 themes$/m);
     assert.doesNotMatch(result.stdout, /::/);
   });
 
@@ -738,6 +765,32 @@ describe("CLI", () => {
       assert.match(html, /<svg /);
       const svg = await readFile(out, "utf8");
       assert.match(svg, /data-theme="reef"/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("includes aurora in HTML report when --theme aurora", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-html-aurora-"));
+    const out = join(dir, "tank.svg");
+    try {
+      const result = await runCli([
+        "generate",
+        "--user",
+        "html-aurora",
+        "--source",
+        "mock",
+        "--theme",
+        "aurora",
+        "--out",
+        out,
+        "--html",
+      ]);
+      assert.equal(result.code, 0, result.stderr);
+      assert.match(result.stdout, /aurora/);
+      assert.match(result.stdout, /data-theme="aurora"/);
+      const svg = await readFile(out, "utf8");
+      assert.match(svg, /data-theme="aurora"/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
