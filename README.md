@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.11 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.12 · Node.js 18.18+
 
 ---
 
@@ -35,7 +35,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 | --- | --- | --- |
 | Mapping | Year total → fish count; streaks → kelp; last 14 days → bubbles | 全年总数 → 鱼数；连续打卡 → 海藻；近两周 → 气泡 |
 | Sources | GraphQL calendar, public events, or deterministic mock | GraphQL 日历 / 公开 Events / 确定性 mock |
-| Themes | `deep` · `reef` · `midnight` (palette only) | 三种配色，布局与映射不变 |
+| Themes | `deep` · `reef` · `midnight` · `lagoon` · `ember` · `fog` · `aurora` (palette only) | 七种配色，布局与映射不变 |
 | Embed | Commit SVG, or refresh daily via composite Action | 提交 SVG，或用 Action 每日重画 |
 | API | CLI + TypeScript library | CLI + 库 |
 | Actions | `--github` workflow commands (`::notice::` / `::error::`) + job summary | `--github` 输出 Actions 注解与 Job Summary |
@@ -152,10 +152,12 @@ Empty years still get a few wanderers. Same username + calendar snapshot → sam
 | `lagoon` | Fresh green aquatic · 清新绿调 |
 | `ember` | Warm amber glow · 琥珀暖光 |
 | `fog` | Cool misty gray · 冷雾灰调 |
+| `aurora` | Cold northern-lights glow · 冷极光青紫 |
 
 ```bash
 npx contrib-aquarium generate --user YOUR_LOGIN --theme midnight --out aquarium.svg
 npx contrib-aquarium generate --user YOUR_LOGIN --theme ember --out aquarium.svg
+npx contrib-aquarium generate --user YOUR_LOGIN --theme aurora --out aquarium.svg
 ```
 
 ---
@@ -354,7 +356,7 @@ GitHub 的 Camo 代理可能短暂缓存缩略图；仓库里的文件是新的�
 ```
 contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--source auto|graphql|events|mock]
-                          [--theme deep|reef|midnight|lagoon|ember|fog]
+                          [--theme deep|reef|midnight|lagoon|ember|fog|aurora]
                           [--width <px>] [--height <px>]
                           [--static | --no-animate]
                           [--json]
@@ -372,7 +374,7 @@ contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 | `--user` | required | GitHub login |
 | `--out` | `aquarium.svg` | Output path (dirs created) |
 | `--source` | `auto` | See data sources |
-| `--theme` | `deep` | `deep` · `reef` · `midnight` · `lagoon` · `ember` · `fog` |
+| `--theme` | `deep` | `deep` · `reef` · `midnight` · `lagoon` · `ember` · `fog` · `aurora` |
 | `--width` | `860` | Display width (viewBox fixed) · 展示宽 |
 | `--height` | proportional · 等比 | Display height · 展示高 |
 | `--static` | off | Strip animations; fish rest · 移除动画 |

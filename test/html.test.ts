@@ -20,7 +20,7 @@ function sample(overrides: Partial<HtmlReportInput> = {}): HtmlReportInput {
     width: 860,
     height: 300,
     staticMode: false,
-    version: "0.1.11",
+    version: "0.1.12",
     svg: `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" data-user="webywz"></svg>
 `,

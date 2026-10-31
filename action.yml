@@ -17,7 +17,7 @@ inputs:
     required: false
     default: auto
   theme:
-    description: "Color theme: deep, reef, midnight, lagoon, ember, or fog"
+    description: "Color theme: deep, reef, midnight, lagoon, ember, fog, or aurora"
     required: false
     default: deep
   static:

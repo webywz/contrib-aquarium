@@ -88,6 +88,13 @@ function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMa
 
 function help(locale: Locale): string {
   const version = readPackageVersion();
+  const themePipe = THEME_NAMES.join("|");
+  const themeMid = THEME_NAMES.slice(1, -1).join(locale === "zh" ? "、" : ", ");
+  const themeLast = THEME_NAMES[THEME_NAMES.length - 1];
+  const themeOption =
+    locale === "zh"
+      ? `${THEME_NAMES[0]}（默认）、${themeMid} 或 ${themeLast}`
+      : `${THEME_NAMES[0]} (default), ${themeMid}, or ${themeLast}`;
   if (locale === "zh") {
     return `contrib-aquarium ${version}
 将 GitHub 年度贡献转化成活体 SVG 鱼缸。
@@ -95,7 +102,7 @@ function help(locale: Locale): string {
 用法:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
                             [--source auto|graphql|events|mock]
-                            [--theme deep|reef|midnight|lagoon|ember|fog]
+                            [--theme ${themePipe}]
                             [--width <px>] [--height <px>]
                             [--static | --no-animate]
                             [--json]
@@ -110,7 +117,7 @@ function help(locale: Locale): string {
   --user         GitHub 用户名（必填）
   --out          输出路径（默认 aquarium.svg）
   --source       数据源: auto（默认）、graphql、events 或 mock
-  --theme        配色主题: deep（默认）、reef、midnight、lagoon、ember 或 fog
+  --theme        配色主题: ${themeOption}
   --width        SVG 显示宽度（px，默认 860）；viewBox 保持 860×300
   --height       SVG 显示高度（px，默认与 --width 等比）
   --static       移除动画，鱼和植物静止（同 --no-animate）
@@ -161,7 +168,7 @@ Turn a GitHub year into a living SVG aquarium.
 Usage:
   contrib-aquarium generate --user <login> [--out aquarium.svg]
                             [--source auto|graphql|events|mock]
-                            [--theme deep|reef|midnight|lagoon|ember|fog]
+                            [--theme ${themePipe}]
                             [--width <px>] [--height <px>]
                             [--static | --no-animate]
                             [--json]
@@ -176,7 +183,7 @@ Options:
   --user         GitHub login (required)
   --out          Output path (default: aquarium.svg)
   --source       Data source: auto (default), graphql, events, or mock
-  --theme        Color theme: deep (default), reef, midnight, lagoon, ember, or fog
+  --theme        Color theme: ${themeOption}
   --width        SVG display width in px (default: 860); viewBox stays 860×300
   --height       SVG display height in px (default: proportional to --width)
   --static       Strip animations; fish and plants rest (same as --no-animate)
