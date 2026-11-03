@@ -7,6 +7,7 @@ import { copyToClipboard } from "./clipboard.js";
 import { generateAquarium } from "./generate.js";
 import {
   annotation,
+  appendGitHubOutputs,
   appendGitHubStepSummary,
   formatGenerateNotice,
   formatGenerateStepSummary,
@@ -325,6 +326,16 @@ function tryAppendStepSummary(github: boolean, markdown: string): void {
   }
 }
 
+function tryAppendOutputs(github: boolean, summary: GenerateSummary): void {
+  if (!github) return;
+  try {
+    appendGitHubOutputs(summary);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`contrib-aquarium: GITHUB_OUTPUT skipped (${msg})`);
+  }
+}
+
 function statsFromActivity(activity: Activity) {
   const days = flattenDays(activity);
   const dayCount = Math.max(days.length, 1);
@@ -470,6 +481,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<number> {
         await writeFile(jsonOutPath, jsonOutput + "\n", "utf8");
         emitNotice(formatGenerateNotice(summary), github);
         tryAppendStepSummary(github, formatGenerateStepSummary(summary));
+        tryAppendOutputs(github, summary);
         return 0;
       }
 
@@ -477,6 +489,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<number> {
       console.log(jsonOutput);
       emitNotice(formatGenerateNotice(summary), github);
       tryAppendStepSummary(github, formatGenerateStepSummary(summary));
+      tryAppendOutputs(github, summary);
       return 0;
     }
 
@@ -527,6 +540,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<number> {
 
     emitNotice(formatGenerateNotice(summary), github);
     tryAppendStepSummary(github, formatGenerateStepSummary(summary));
+    tryAppendOutputs(github, summary);
     return 0;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

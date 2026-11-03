@@ -87,3 +87,22 @@ export function appendGitHubStepSummary(markdown: string): void {
   const body = markdown.endsWith("\n") ? markdown : `${markdown}\n`;
   appendFileSync(path, body, "utf8");
 }
+
+/**
+ * Append job outputs when running inside Actions (`GITHUB_OUTPUT`).
+ * No-op when the env var is unset.
+ */
+export function appendGitHubOutputs(summary: GenerateSummary): void {
+  const path = process.env.GITHUB_OUTPUT;
+  if (!path) return;
+  const lines = [
+    `login=${summary.login}`,
+    `theme=${summary.theme}`,
+    `source=${summary.source}`,
+    `out=${summary.output}`,
+    `fish=${summary.fishCount}`,
+    `activity=${summary.totalContributions}`,
+  ];
+  const body = lines.join("\n") + "\n";
+  appendFileSync(path, body, "utf8");
+}
