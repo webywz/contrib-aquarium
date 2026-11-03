@@ -25,7 +25,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 
 自包含 SVG（CSS + SMIL），嵌入不需要 JS，可当普通图片用。暗水色 + 铜框，浅色 / 深色主题都站得住。
 
-`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.12 · Node.js 18.18+
+`npx contrib-aquarium` · package `contrib-aquarium` · v0.1.13 · Node.js 18.18+
 
 ---
 
@@ -40,6 +40,7 @@ Self-contained SVG (CSS + SMIL) — no JavaScript in the embed, so GitHub can ho
 | API | CLI + TypeScript library | CLI + 库 |
 | Actions | `--github` workflow commands (`::notice::` / `::error::`) + job summary | `--github` 输出 Actions 注解与 Job Summary |
 | HTML | `--html [path]` self-contained offline report (no CDN) | `--html [path]` 自包含离线报告（无 CDN） |
+| Clipboard | `--copy` copies the generated SVG markup (skip silently if unavailable) | `--copy` 复制生成的 SVG 标记（不可用时静默跳过） |
 
 ---
 
@@ -87,6 +88,9 @@ npx contrib-aquarium generate --user webywz --theme reef --out aquarium.svg
 # list available themes
 npx contrib-aquarium --list-themes
 npx contrib-aquarium --list-themes --json
+
+# copy the generated SVG markup to the clipboard (skip silently if unavailable)
+npx contrib-aquarium generate --user webywz --source mock --copy
 ```
 
 In a README:
@@ -284,6 +288,25 @@ npx contrib-aquarium generate --user webywz --source mock --html --locale zh
 
 ---
 
+## Clipboard · `--copy`
+
+`--copy` copies the generated SVG markup — the same body written (or that would be written) to `--out` — to the system clipboard. It does **not** copy JSON, HTML chrome, or the pretty success line. If no clipboard tool is available (`pbcopy` / `clip` / `wl-copy` / `xclip` / `xsel`), the flag is skipped silently and the command still succeeds.
+
+`--copy` 把生成的 SVG 标记（写入 / 本会写入 `--out` 的那份）复制到系统剪贴板。**不会**复制 JSON、HTML 外壳或人类成功摘要行。没有剪贴板工具（`pbcopy` / `clip` / `wl-copy` / `xclip` / `xsel`）时静默跳过，命令仍成功。
+
+```bash
+# SVG file + clipboard · 写文件并复制 SVG
+npx contrib-aquarium generate --user webywz --source mock --out aquarium.svg --copy
+
+# Still copies SVG, not JSON · 仍复制 SVG，不是 JSON
+npx contrib-aquarium generate --user webywz --source mock --json --copy
+
+# Still copies SVG, not the HTML report · 仍复制 SVG，不是 HTML 报告
+npx contrib-aquarium generate --user webywz --source mock --html --copy
+```
+
+---
+
 ## GitHub Actions · `--github`
 
 `--github` emits GitHub Actions workflow commands: `::error::` on failures / usage errors, and one `::notice::` on a successful generate (user, theme, output path or JSON mode, fish/activity counts). Successful `--list-themes` also gets a notice. When `GITHUB_STEP_SUMMARY` is set, a short Markdown job summary is appended. Without `--github`, behavior is unchanged — no annotations, no job-summary writes.
@@ -365,6 +388,7 @@ contrib-aquarium generate --user <login> [--out aquarium.svg]
                           [--locale <en|zh>]
                           [--quiet]
                           [--github]
+                          [--copy]
 
 contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 ```
@@ -385,6 +409,7 @@ contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 | `--locale` | `en` | Interface language: `en` or `zh` · 界面语言 |
 | `--quiet` | off | Suppress success summary · 关闭成功摘要 |
 | `--github` | off | Actions annotations (`::error::` / `::notice::`) + job summary · Actions 注解与 Job Summary |
+| `--copy` | off | Copy the generated SVG markup to the clipboard; skip silently if unavailable · 复制 SVG 标记到剪贴板（不可用则跳过） |
 | `--list-themes` | off | Print available themes (one per line; with `--json`: JSON array) · 打印可用主题 |
 
 ```bash
