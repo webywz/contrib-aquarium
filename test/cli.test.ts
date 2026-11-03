@@ -996,4 +996,90 @@ describe("CLI", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("writes GITHUB_OUTPUT with --github", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-gh-output-"));
+    const out = join(dir, "tank.svg");
+    const outputFile = join(dir, "github_output.txt");
+    try {
+      const result = await runCli(
+        [
+          "generate",
+          "--user",
+          "output-github",
+          "--source",
+          "mock",
+          "--theme",
+          "reef",
+          "--out",
+          out,
+          "--github",
+        ],
+        { GITHUB_OUTPUT: outputFile },
+      );
+      assert.equal(result.code, 0, result.stderr);
+      const body = await readFile(outputFile, "utf8");
+      assert.match(body, /^login=output-github$/m);
+      assert.match(body, /^theme=reef$/m);
+      assert.match(body, /^source=mock$/m);
+      assert.match(body, new RegExp(`^out=${out.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"));
+      assert.match(body, /^fish=\d+$/m);
+      assert.match(body, /^activity=\d+$/m);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not write GITHUB_OUTPUT without --github", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-no-output-"));
+    const out = join(dir, "tank.svg");
+    const outputFile = join(dir, "github_output.txt");
+    try {
+      const result = await runCli(
+        [
+          "generate",
+          "--user",
+          "no-output",
+          "--source",
+          "mock",
+          "--out",
+          out,
+        ],
+        { GITHUB_OUTPUT: outputFile },
+      );
+      assert.equal(result.code, 0, result.stderr);
+      await assert.rejects(readFile(outputFile, "utf8"), /ENOENT/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes GITHUB_OUTPUT with --github --json", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-gh-json-output-"));
+    const outputFile = join(dir, "github_output.txt");
+    try {
+      const result = await runCli(
+        [
+          "generate",
+          "--user",
+          "json-output",
+          "--source",
+          "mock",
+          "--json",
+          "--github",
+        ],
+        { GITHUB_OUTPUT: outputFile },
+      );
+      assert.equal(result.code, 0, result.stderr);
+      const body = await readFile(outputFile, "utf8");
+      assert.match(body, /^login=json-output$/m);
+      assert.match(body, /^theme=deep$/m);
+      assert.match(body, /^source=mock$/m);
+      assert.match(body, /^out=json$/m);
+      assert.match(body, /^fish=\d+$/m);
+      assert.match(body, /^activity=\d+$/m);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
 });

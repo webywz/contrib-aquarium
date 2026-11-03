@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   annotation,
+  appendGitHubOutputs,
   appendGitHubStepSummary,
   escapeData,
   escapeProperty,
@@ -96,6 +97,52 @@ describe("github annotations", () => {
     } finally {
       if (prev === undefined) delete process.env.GITHUB_STEP_SUMMARY;
       else process.env.GITHUB_STEP_SUMMARY = prev;
+    }
+  });
+
+  it("appends job outputs when GITHUB_OUTPUT is set", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "aquarium-gh-output-"));
+    const outFile = join(dir, "github_output.txt");
+    const prev = process.env.GITHUB_OUTPUT;
+    try {
+      process.env.GITHUB_OUTPUT = outFile;
+      appendGitHubOutputs({
+        login: "test-user",
+        theme: "reef",
+        source: "mock",
+        output: "/tmp/tank.svg",
+        fishCount: 8,
+        totalContributions: 142,
+      });
+      const body = await readFile(outFile, "utf8");
+      assert.match(body, /^login=test-user$/m);
+      assert.match(body, /^theme=reef$/m);
+      assert.match(body, /^source=mock$/m);
+      assert.match(body, /^out=\/tmp\/tank\.svg$/m);
+      assert.match(body, /^fish=8$/m);
+      assert.match(body, /^activity=142$/m);
+    } finally {
+      if (prev === undefined) delete process.env.GITHUB_OUTPUT;
+      else process.env.GITHUB_OUTPUT = prev;
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("no-ops outputs when GITHUB_OUTPUT is unset", () => {
+    const prev = process.env.GITHUB_OUTPUT;
+    try {
+      delete process.env.GITHUB_OUTPUT;
+      appendGitHubOutputs({
+        login: "test-user",
+        theme: "deep",
+        source: "mock",
+        output: "json",
+        fishCount: 10,
+        totalContributions: 200,
+      });
+    } finally {
+      if (prev === undefined) delete process.env.GITHUB_OUTPUT;
+      else process.env.GITHUB_OUTPUT = prev;
     }
   });
 });
