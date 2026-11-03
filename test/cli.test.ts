@@ -694,6 +694,23 @@ describe("CLI", () => {
     }
   });
 
+  it("documents --copy in help (en + zh)", async () => {
+    const en = await runCli(["--help"]);
+    const zh = await runCli(["--help", "--locale", "zh"]);
+    assert.equal(en.code, 0);
+    assert.equal(zh.code, 0);
+    assert.match(en.stdout, /--copy/);
+    assert.match(en.stdout, /clipboard/);
+    assert.match(en.stdout, /SVG markup/);
+    assert.match(en.stdout, /skip silently/);
+    assert.doesNotMatch(en.stdout, /--no-color/);
+    assert.match(zh.stdout, /--copy/);
+    assert.match(zh.stdout, /剪贴板/);
+    assert.match(zh.stdout, /SVG 标记/);
+    assert.match(zh.stdout, /静默跳过/);
+    assert.doesNotMatch(zh.stdout, /--no-color/);
+  });
+
   it("documents --html in help (en + zh)", async () => {
     const en = await runCli(["--help"]);
     const zh = await runCli(["--help", "--locale", "zh"]);

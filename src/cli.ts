@@ -1,6 +1,9 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { copyToClipboard } from "./clipboard.js";
 import { generateAquarium } from "./generate.js";
 import {
   annotation,
@@ -19,12 +22,35 @@ import { currentStreak, flattenDays, mapBubbleCount, mapFishCount, mapPlantCount
 import type { Activity, LoadSource } from "./types.js";
 import { getErrorMessage, parseLocale, type Locale } from "./locale.js";
 
+export type CliDeps = {
+  copyToClipboard?: (text: string) => boolean;
+};
+
+/** Missing clipboard → skip silently. Helpers must not fail generate. */
+function maybeCopySvg(text: string, copy: (text: string) => boolean): void {
+  try {
+    copy(text);
+  } catch {
+    // Clipboard helpers must not fail the generate path.
+  }
+}
+
 type FlagMap = Record<string, string | boolean>;
 
 /** Usage / argv errors — matches other webywz CLIs that reserve 2 for usage. */
 const USAGE_EXIT = 2;
 
-const BOOLEAN_FLAGS = new Set(["help", "version", "quiet", "static", "no-animate", "json", "list-themes", "github"]);
+const BOOLEAN_FLAGS = new Set([
+  "help",
+  "version",
+  "quiet",
+  "static",
+  "no-animate",
+  "json",
+  "list-themes",
+  "github",
+  "copy",
+]);
 const VALUE_FLAGS = new Set(["user", "out", "source", "theme", "width", "height", "token", "locale"]);
 
 function parseArgs(argv: string[]): { command: string | undefined; flags: FlagMap } {
@@ -111,6 +137,7 @@ function help(locale: Locale): string {
                             [--locale <en|zh>]
                             [--quiet]
                             [--github]
+                            [--copy]
   contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 
 选项:
@@ -128,6 +155,7 @@ function help(locale: Locale): string {
   --locale       界面语言: en（默认）或 zh
   --quiet        禁用成功摘要行
   --github       输出 GitHub Actions 工作流命令（失败 ::error::，成功一条 ::notice::）
+  --copy         将写入 --out 的 SVG 标记复制到剪贴板（不可用时静默跳过）
   --list-themes  打印可用主题名称（每行一个；加 --json 则输出 JSON 数组）
   --help         显示帮助
   --version      打印版本
@@ -145,6 +173,7 @@ SVG 自包含（CSS + SMIL），可作为图片直接嵌入 README。
 --html 与 --json 不能同时使用，请选择一种主输出。
 用 --github 在 Actions 日志里打注解；若设置了 GITHUB_STEP_SUMMARY 则追加 Job Summary。
 与 --json / --html 合用时注解写到 stderr，stdout 仍是纯 JSON 或 HTML。--quiet 仍隐藏人类摘要行，但注解与 Job Summary 照常输出。
+用 --copy 把写入 --out 的 SVG 标记复制到剪贴板（不是 JSON / HTML 外壳）。没有剪贴板工具时静默跳过，命令仍成功。
 
 JSON 输出示例:
   {
@@ -177,6 +206,7 @@ Usage:
                             [--locale <en|zh>]
                             [--quiet]
                             [--github]
+                            [--copy]
   contrib-aquarium --list-themes [--json] [--locale <en|zh>] [--github]
 
 Options:
@@ -194,6 +224,7 @@ Options:
   --locale       Interface language: en (default) or zh
   --quiet        Suppress the success summary line
   --github       Emit GitHub Actions workflow commands (failures ::error::, one success ::notice::)
+  --copy         Copy the generated SVG markup (the body written to --out) to the clipboard; skip silently if unavailable
   --list-themes  Print available theme names (one per line; with --json: JSON array)
   --help         Show this message
   --version      Print version
@@ -212,6 +243,8 @@ Use --html for a self-contained offline report (stats / theme / user / SVG path,
 Use --github for Actions log annotations; when GITHUB_STEP_SUMMARY is set, append a job summary.
 With --json / --html, annotations go to stderr so stdout stays parseable. --quiet still hides the
 pretty success line; annotations and the job summary still emit.
+Use --copy to put the SVG markup (the body written to --out) on the clipboard — not JSON or HTML
+chrome. Missing clipboard tools skip silently; the command still succeeds.
 
 Example JSON output:
   {
@@ -316,7 +349,7 @@ function statsFromActivity(activity: Activity) {
   };
 }
 
-async function run(argv: string[]): Promise<number> {
+export async function run(argv: string[], deps: CliDeps = {}): Promise<number> {
   const locale = extractLocale(argv);
   const githubFlag = wantsGitHub(argv);
   let parsed: { command: string | undefined; flags: FlagMap };
@@ -395,6 +428,11 @@ async function run(argv: string[]): Promise<number> {
       height,
       static: static_mode,
     });
+
+    if (flags.copy) {
+      const copy = deps.copyToClipboard ?? copyToClipboard;
+      maybeCopySvg(svg, copy);
+    }
 
     const stats = statsFromActivity(activity);
     const summary: GenerateSummary = {
@@ -509,5 +547,18 @@ async function run(argv: string[]): Promise<number> {
   }
 }
 
-const exitCode = await run(process.argv);
-process.exit(exitCode);
+function isDirectRun(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  const self = fileURLToPath(import.meta.url);
+  try {
+    return realpathSync(entry) === self || realpathSync(entry) === realpathSync(self);
+  } catch {
+    return /(cli\.(js|ts)|contrib-aquarium)$/.test(entry);
+  }
+}
+
+if (isDirectRun()) {
+  const exitCode = await run(process.argv);
+  process.exit(exitCode);
+}
